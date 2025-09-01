@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Input } from '../../../../components/ui/Input';
 import { Button } from '../../../../components/ui/Button';
-import { ActorProfile, ActorCategory } from '../../types';
+import { ActorProfile, ActorCategory, ColombiaDepartment } from '../../types';
 
 interface ActorFormProps {
   onSubmit: (data: ActorProfile['actorData']) => void;
@@ -19,8 +19,8 @@ const ActorForm = ({ onSubmit, onBack, loading }: ActorFormProps) => {
     gender: 'prefer-not-to-say',
     nationality: '',
     location: {
+      department: '',
       city: '',
-      state: '',
       country: 'Colombia'
     },
     phone: '',
@@ -94,6 +94,10 @@ const ActorForm = ({ onSubmit, onBack, loading }: ActorFormProps) => {
       newErrors['phone'] = 'El teléfono es requerido';
     }
 
+    if (!formData.location?.department?.trim()) {
+      newErrors['location.department'] = 'El departamento es requerido';
+    }
+
     if (!formData.location?.city?.trim()) {
       newErrors['location.city'] = 'La ciudad es requerida';
     }
@@ -117,6 +121,7 @@ const ActorForm = ({ onSubmit, onBack, loading }: ActorFormProps) => {
   };
 
   const categories = Object.values(ActorCategory);
+  const departments = Object.values(ColombiaDepartment);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -182,7 +187,27 @@ const ActorForm = ({ onSubmit, onBack, loading }: ActorFormProps) => {
           />
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Departamento *
+            </label>
+            <select
+              value={formData.location?.department || ''}
+              onChange={(e) => handleInputChange('location.department', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Selecciona un departamento</option>
+              {departments.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
+            {errors['location.department'] && (
+              <p className="text-red-500 text-sm mt-1">{errors['location.department']}</p>
+            )}
+          </div>
           <Input
             label="Ciudad *"
             value={formData.location?.city || ''}

@@ -33,40 +33,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
+  setUser(user);
+  
+  if (user) {
+    try {
+      // Solo verificar si necesita onboarding
+      const needsOnboardingCheck = await UserProfileService.needsOnboarding(user.uid);
+      setNeedsOnboarding(needsOnboardingCheck);
       
-      if (user) {
-        try {
-          // Verificar si el usuario necesita onboarding
-          const needsOnboardingCheck = await UserProfileService.needsOnboarding(user.uid);
-          setNeedsOnboarding(needsOnboardingCheck);
-          
-          // Crear perfil inicial si no existe
-          if (needsOnboardingCheck) {
-            try {
-              await UserProfileService.createInitialProfile(
-                user.uid, 
-                user.email || '', 
-                user.displayName || '',
-                user.photoURL || undefined
-              );
-            } catch (error) {
-              // Si el perfil ya existe, ignorar el error
-              console.log('Profile already exists or error creating initial profile');
-            }
-          }
-          
-        } catch (error) {
-          console.error('Error checking onboarding status:', error);
-          setNeedsOnboarding(true); // Por precaución, asumir que necesita onboarding
-        }
-      } else {
-        setNeedsOnboarding(false);
-      }
-      
-      setLoading(false);
-      setInitialized(true);
-    });
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setNeedsOnboarding(true); // Por precaución, asumir que necesita onboarding
+    }
+  } else {
+    setNeedsOnboarding(false);
+  }
+  
+  setLoading(false);
+  setInitialized(true);
+});
 
     return unsubscribe;
   }, []);

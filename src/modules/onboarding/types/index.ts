@@ -6,6 +6,41 @@ export enum UserRole {
   ADMIN = 'admin'
 }
 
+export enum ColombiaDepartment {
+  AMAZONAS = 'Amazonas',
+  ANTIOQUIA = 'Antioquia',
+  ARAUCA = 'Arauca',
+  ATLANTICO = 'Atlántico',
+  BOLIVAR = 'Bolívar',
+  BOYACA = 'Boyacá',
+  CALDAS = 'Caldas',
+  CAQUETA = 'Caquetá',
+  CASANARE = 'Casanare',
+  CAUCA = 'Cauca',
+  CESAR = 'Cesar',
+  CHOCO = 'Chocó',
+  CORDOBA = 'Córdoba',
+  CUNDINAMARCA = 'Cundinamarca',
+  GUAINIA = 'Guainía',
+  GUAVIARE = 'Guaviare',
+  HUILA = 'Huila',
+  LA_GUAJIRA = 'La Guajira',
+  MAGDALENA = 'Magdalena',
+  META = 'Meta',
+  NARINO = 'Nariño',
+  NORTE_DE_SANTANDER = 'Norte de Santander',
+  PUTUMAYO = 'Putumayo',
+  QUINDIO = 'Quindío',
+  RISARALDA = 'Risaralda',
+  SAN_ANDRES = 'San Andrés y Providencia',
+  SANTANDER = 'Santander',
+  SUCRE = 'Sucre',
+  TOLIMA = 'Tolima',
+  VALLE_DEL_CAUCA = 'Valle del Cauca',
+  VAUPES = 'Vaupés',
+  VICHADA = 'Vichada'
+}
+
 export enum ExperienceLevel {
   BEGINNER = 'beginner',
   INTERMEDIATE = 'intermediate',
@@ -25,6 +60,7 @@ export interface BaseUserProfile {
   updatedAt: Date;
 }
 
+
 // Datos específicos para Actores (Talento)
 export interface ActorProfile extends BaseUserProfile {
   role: UserRole.ACTOR;
@@ -36,8 +72,8 @@ export interface ActorProfile extends BaseUserProfile {
     gender: 'male' | 'female' | 'other' | 'prefer-not-to-say';
     nationality: string;
     location: {
+      department: string;
       city: string;
-      state: string;
       country: string;
     };
     
@@ -103,7 +139,7 @@ export interface HirerProfile extends BaseUserProfile {
     location: {
       address: string;
       city: string;
-      state: string;
+      department: string;
       country: string;
       postalCode: string;
     };

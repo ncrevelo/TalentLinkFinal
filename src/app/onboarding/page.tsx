@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../modules/auth/hooks/useAuth';
+import { ClientOnly } from '../../shared/hooks';
 import OnboardingWizard from '../../modules/onboarding/components/OnboardingWizard';
-import { ClientOnly } from '../../shared/hooks/useIsClient';
 
 const OnboardingPage = () => {
   const { user, loading } = useAuth();

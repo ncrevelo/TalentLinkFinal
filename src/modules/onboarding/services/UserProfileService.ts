@@ -10,84 +10,60 @@ import {
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
-import { db } from '../../../shared/config/firebase';
+import { db, auth } from '../../../shared/config/firebase';
 import { UserProfile, UserRole, ActorProfile, HirerProfile, OnboardingFormData } from '../types';
 
 export class UserProfileService {
   // Colecciones
   private static readonly COLLECTIONS = {
-    ROLE: 'role',
     ADMIN: 'admin',
     HIRER: 'hirer', 
-    USER: 'user' // Para actores
+    ACTOR: 'actor',
+    GLOBAL_DATA_USERS: 'talentlink_users',
+    USERS: 'users'
+
+
   };
-
-  /**
-   * Crear perfil inicial después del registro
-   */
-  static async createInitialProfile(uid: string, email: string, displayName: string, photoURL?: string) {
-    try {
-      const initialData = {
-        uid,
-        email,
-        displayName,
-        photoURL: photoURL || null,
-        role: null, // Se asignará en onboarding
-        isProfileComplete: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
-
-      // Crear documento en colección 'role'
-      await setDoc(doc(db, this.COLLECTIONS.ROLE, uid), initialData);
-
-      return { success: true, message: 'Perfil inicial creado' };
-    } catch (error: any) {
-      console.error('Error creating initial profile:', error);
-      throw new Error('Error al crear perfil inicial: ' + error.message);
-    }
-  }
 
   /**
    * Completar onboarding de Actor
    */
   static async completeActorOnboarding(uid: string, actorData: ActorProfile['actorData']) {
     try {
-      // Obtener datos básicos del perfil
-      const roleDoc = await getDoc(doc(db, this.COLLECTIONS.ROLE, uid));
-      if (!roleDoc.exists()) {
-        throw new Error('Perfil base no encontrado');
+      // Obtener datos del usuario actual de Firebase Auth
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Usuario no autenticado');
       }
-
-      const baseData = roleDoc.data();
       
-      // Crear perfil completo de actor  
+      // Crear perfil completo de actor directamente
       const actorProfile = {
-        uid: baseData.uid,
-        email: baseData.email,
-        displayName: baseData.displayName,
-        photoURL: baseData.photoURL,
+        uid,
+        email: currentUser.email || '',
+        displayName: currentUser.displayName || '',
+        photoURL: currentUser.photoURL || null,
         role: UserRole.ACTOR,
         actorData,
         isProfileComplete: true,
-        updatedAt: serverTimestamp(),
-        createdAt: baseData.createdAt || serverTimestamp()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
-      // Actualizar en 'role' collection
-      await updateDoc(doc(db, this.COLLECTIONS.ROLE, uid), {
-        role: UserRole.ACTOR,
-        isProfileComplete: true,
-        updatedAt: serverTimestamp()
-      });
-
-      // Crear en 'user' collection (para actores)
-      await setDoc(doc(db, this.COLLECTIONS.USER, uid), actorProfile);
+      // Crear en 'actor' collection
+      await setDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.ACTOR, uid), actorProfile);
 
       return { success: true, message: 'Perfil de actor completado', profile: actorProfile };
     } catch (error: any) {
       console.error('Error completing actor onboarding:', error);
-      throw new Error('Error al completar perfil de actor: ' + error.message);
+      
+      // Dar más información específica sobre errores
+      if (error.code === 'permission-denied') {
+        throw new Error('Error de permisos: Las reglas de Firestore no permiten completar el perfil de actor. Configura las reglas de Firestore.');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('Usuario no autenticado. Inicia sesión e intenta de nuevo.');
+      }
+      
+      throw new Error('Error al completar perfil de actor: ' + (error.message || 'Error desconocido'));
     }
   }
 
@@ -96,41 +72,40 @@ export class UserProfileService {
    */
   static async completeHirerOnboarding(uid: string, hirerData: HirerProfile['hirerData']) {
     try {
-      // Obtener datos básicos del perfil
-      const roleDoc = await getDoc(doc(db, this.COLLECTIONS.ROLE, uid));
-      if (!roleDoc.exists()) {
-        throw new Error('Perfil base no encontrado');
+      // Obtener datos del usuario actual de Firebase Auth
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Usuario no autenticado');
       }
-
-      const baseData = roleDoc.data();
       
-      // Crear perfil completo de contratante
+      // Crear perfil completo de contratante directamente
       const hirerProfile = {
-        uid: baseData.uid,
-        email: baseData.email,
-        displayName: baseData.displayName,
-        photoURL: baseData.photoURL,
+        uid,
+        email: currentUser.email || '',
+        displayName: currentUser.displayName || '',
+        photoURL: currentUser.photoURL || null,
         role: UserRole.HIRER,
         hirerData,
         isProfileComplete: true,
-        updatedAt: serverTimestamp(),
-        createdAt: baseData.createdAt || serverTimestamp()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       };
 
-      // Actualizar en 'role' collection
-      await updateDoc(doc(db, this.COLLECTIONS.ROLE, uid), {
-        role: UserRole.HIRER,
-        isProfileComplete: true,
-        updatedAt: serverTimestamp()
-      });
-
       // Crear en 'hirer' collection
-      await setDoc(doc(db, this.COLLECTIONS.HIRER, uid), hirerProfile);
+      await setDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.HIRER, uid), hirerProfile);
 
       return { success: true, message: 'Perfil de contratante completado', profile: hirerProfile };
     } catch (error: any) {
       console.error('Error completing hirer onboarding:', error);
-      throw new Error('Error al completar perfil de contratante: ' + error.message);
+      
+      // Dar más información específica sobre errores
+      if (error.code === 'permission-denied') {
+        throw new Error('Error de permisos: Las reglas de Firestore no permiten completar el perfil de contratante. Configura las reglas de Firestore.');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('Usuario no autenticado. Inicia sesión e intenta de nuevo.');
+      }
+      
+      throw new Error('Error al completar perfil de contratante: ' + (error.message || 'Error desconocido'));
     }
   }
 
@@ -139,31 +114,28 @@ export class UserProfileService {
    */
   static async getUserProfile(uid: string): Promise<UserProfile | null> {
     try {
-      // Primero verificar en 'role' para saber el tipo
-      const roleDoc = await getDoc(doc(db, this.COLLECTIONS.ROLE, uid));
-      if (!roleDoc.exists()) {
-        return null;
-      }
-
-      const roleData = roleDoc.data();
-      const role = roleData.role;
-
-      if (!role || !roleData.isProfileComplete) {
-        return null;
-      }
-
-      // Obtener perfil completo según el rol
+      // Buscar en todas las colecciones de perfiles
       let profileDoc;
-      if (role === UserRole.ACTOR) {
-        profileDoc = await getDoc(doc(db, this.COLLECTIONS.USER, uid));
-      } else if (role === UserRole.HIRER) {
-        profileDoc = await getDoc(doc(db, this.COLLECTIONS.HIRER, uid));
-      } else if (role === UserRole.ADMIN) {
-        profileDoc = await getDoc(doc(db, this.COLLECTIONS.ADMIN, uid));
-      }
+      let role: UserRole;
 
-      if (!profileDoc || !profileDoc.exists()) {
-        return null;
+      // Intentar encontrar en actor
+      profileDoc = await getDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.ACTOR, uid));
+      if (profileDoc.exists()) {
+        role = UserRole.ACTOR;
+      } else {
+        // Intentar encontrar en hirer
+        profileDoc = await getDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.HIRER, uid));
+        if (profileDoc.exists()) {
+          role = UserRole.HIRER;
+        } else {
+          // Intentar encontrar en admin
+          profileDoc = await getDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.ADMIN, uid));
+          if (profileDoc.exists()) {
+            role = UserRole.ADMIN;
+          } else {
+            return null;
+          }
+        }
       }
 
       const profileData = profileDoc.data();
@@ -185,13 +157,18 @@ export class UserProfileService {
    */
   static async needsOnboarding(uid: string): Promise<boolean> {
     try {
-      const roleDoc = await getDoc(doc(db, this.COLLECTIONS.ROLE, uid));
-      if (!roleDoc.exists()) {
-        return true;
-      }
+      // Verificar si existe perfil en cualquier colección
+      const actorDoc = await getDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.ACTOR, uid));
 
-      const data = roleDoc.data();
-      return !data.role || !data.isProfileComplete;
+      if (actorDoc.exists()) return false;
+
+      const hirerDoc = await getDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.HIRER, uid));
+      if (hirerDoc.exists()) return false;
+
+      const adminDoc = await getDoc(doc(db, this.COLLECTIONS.ADMIN, uid));
+      if (adminDoc.exists()) return false;
+
+      return true; // No existe perfil, necesita onboarding
     } catch (error: any) {
       console.error('Error checking onboarding status:', error);
       return true;
@@ -217,7 +194,7 @@ export class UserProfileService {
       let collection = '';
       switch (profile.role) {
         case UserRole.ACTOR:
-          collection = this.COLLECTIONS.USER;
+          collection = this.COLLECTIONS.ACTOR;
           break;
         case UserRole.HIRER:
           collection = this.COLLECTIONS.HIRER;
@@ -246,7 +223,7 @@ export class UserProfileService {
     isAvailable?: boolean;
   }) {
     try {
-      let q = query(collection(db, this.COLLECTIONS.USER));
+      let q = query(collection(db, this.COLLECTIONS.ACTOR));
 
       if (filters.isAvailable !== undefined) {
         q = query(q, where('actorData.availability.isAvailable', '==', filters.isAvailable));
@@ -284,7 +261,7 @@ export class UserProfileService {
       };
 
       // Contar actores
-      const actorsSnapshot = await getDocs(collection(db, this.COLLECTIONS.USER));
+      const actorsSnapshot = await getDocs(collection(db, this.COLLECTIONS.ACTOR));
       stats.totalActors = actorsSnapshot.size;
 
       // Contar contratantes

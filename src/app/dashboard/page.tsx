@@ -9,7 +9,7 @@ import { Navbar, Layout, PageHeader } from '../../components/layout';
 import { DashboardStats } from '../../modules/dashboard/components/DashboardStats';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { ClientOnly } from '../../shared/hooks/useIsClient';
+import { ClientOnly } from '../../shared/hooks';
 import { ROUTES } from '../../shared/constants';
 
 export default function Dashboard() {

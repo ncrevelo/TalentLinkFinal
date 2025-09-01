@@ -146,7 +146,7 @@ const Confirmation = ({ role, onComplete }: ConfirmationProps) => {
           size="lg"
           className="px-8 py-3"
         >
-          Ir al Dashboard
+          Ir a Talent Link
         </Button>
       </div>
 
