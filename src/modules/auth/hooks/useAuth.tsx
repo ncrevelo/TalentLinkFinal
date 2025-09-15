@@ -26,6 +26,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const checkOnboardingStatus = async (user: User) => {
+    try {
+      const needsOnboardingCheck = await UserProfileService.needsOnboarding(user.uid);
+      setNeedsOnboarding(needsOnboardingCheck);
+      return !needsOnboardingCheck; // Return true if profile is complete
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setNeedsOnboarding(true);
+      return false;
+    }
+  };
+
+  const refreshOnboardingStatus = async () => {
+    if (user) {
+      await checkOnboardingStatus(user);
+    }
+  };
+
   useEffect(() => {
     // Solo inicializar en el cliente
     if (typeof window === 'undefined') {
@@ -33,38 +51,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-  setUser(user);
-  
-  if (user) {
-    try {
-      // Solo verificar si necesita onboarding
-      const needsOnboardingCheck = await UserProfileService.needsOnboarding(user.uid);
-      setNeedsOnboarding(needsOnboardingCheck);
+      setUser(user);
       
-    } catch (error) {
-      console.error('Error checking onboarding status:', error);
-      setNeedsOnboarding(true); // Por precaución, asumir que necesita onboarding
-    }
-  } else {
-    setNeedsOnboarding(false);
-  }
-  
-  setLoading(false);
-  setInitialized(true);
-});
+      if (user) {
+        await checkOnboardingStatus(user);
+      } else {
+        setNeedsOnboarding(false);
+      }
+      
+      setLoading(false);
+      setInitialized(true);
+    });
 
     return unsubscribe;
   }, []);
 
   // Redirección automática para onboarding
   useEffect(() => {
-    if (!loading && user && needsOnboarding) {
-      // Solo redirigir si no está ya en la página de onboarding
-      if (pathname !== '/onboarding') {
-        router.push('/onboarding');
+    if (!loading && initialized && user) {
+      if (needsOnboarding) {
+        // Solo redirigir si no está ya en la página de onboarding
+        if (pathname !== '/onboarding') {
+          router.push('/onboarding');
+        }
+      } else {
+        // Si el perfil está completo y está en onboarding, redirigir al dashboard
+        if (pathname === '/onboarding') {
+          router.push('/dashboard');
+        }
       }
     }
-  }, [user, needsOnboarding, loading, pathname, router]);
+  }, [user, needsOnboarding, loading, initialized, pathname, router]);
 
   // Si estamos en el servidor, renderizar inmediatamente
   useEffect(() => {
@@ -101,7 +118,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signInWithGoogle,
     signOut,
-    resetPassword
+    resetPassword,
+    refreshOnboardingStatus
   };
 
   return (

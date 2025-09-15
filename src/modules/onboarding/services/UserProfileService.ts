@@ -157,16 +157,25 @@ export class UserProfileService {
    */
   static async needsOnboarding(uid: string): Promise<boolean> {
     try {
-      // Verificar si existe perfil en cualquier colección
+      // Verificar si existe perfil en cualquier colección Y si está completo
       const actorDoc = await getDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.ACTOR, uid));
 
-      if (actorDoc.exists()) return false;
+      if (actorDoc.exists()) {
+        const data = actorDoc.data();
+        return !data.isProfileComplete; // Solo necesita onboarding si NO está completo
+      }
 
       const hirerDoc = await getDoc(doc(db, this.COLLECTIONS.GLOBAL_DATA_USERS, this.COLLECTIONS.USERS, this.COLLECTIONS.HIRER, uid));
-      if (hirerDoc.exists()) return false;
+      if (hirerDoc.exists()) {
+        const data = hirerDoc.data();
+        return !data.isProfileComplete; // Solo necesita onboarding si NO está completo
+      }
 
       const adminDoc = await getDoc(doc(db, this.COLLECTIONS.ADMIN, uid));
-      if (adminDoc.exists()) return false;
+      if (adminDoc.exists()) {
+        const data = adminDoc.data();
+        return !data.isProfileComplete; // Solo necesita onboarding si NO está completo
+      }
 
       return true; // No existe perfil, necesita onboarding
     } catch (error: any) {

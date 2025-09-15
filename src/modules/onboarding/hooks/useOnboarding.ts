@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { UserRole, OnboardingFormData } from '../types';
 import { UserProfileService } from '../services/UserProfileService';
+import { useAuth } from '../../auth/hooks/useAuth';
 
 interface UseOnboardingReturn {
   loading: boolean;
@@ -17,6 +18,7 @@ interface UseOnboardingReturn {
 const TOTAL_STEPS = 3; // 1: Rol, 2: Datos, 3: Confirmación
 
 export const useOnboarding = (): UseOnboardingReturn => {
+  const { refreshOnboardingStatus } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
@@ -61,14 +63,20 @@ export const useOnboarding = (): UseOnboardingReturn => {
       }
 
       // El onboarding se completó exitosamente
-      // El AuthProvider detectará automáticamente el cambio
+      // Refrescar el estado de autenticación para detectar el perfil completo
+      try {
+        await refreshOnboardingStatus();
+      } catch (refreshError) {
+        console.warn('Error refrescando estado de onboarding:', refreshError);
+        // No fallar por esto, el perfil se guardó correctamente
+      }
     } catch (err: any) {
       setError(err.message || 'Error al completar el onboarding');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [selectedRole]);
+  }, [selectedRole, refreshOnboardingStatus]);
 
   return {
     loading,

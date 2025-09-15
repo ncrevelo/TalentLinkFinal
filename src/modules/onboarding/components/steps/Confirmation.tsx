@@ -1,5 +1,8 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../../auth/hooks/useAuth';
 import { UserRole } from '../../types';
 import { Button } from '../../../../components/ui/Button';
 
@@ -9,6 +12,30 @@ interface ConfirmationProps {
 }
 
 const Confirmation = ({ role, onComplete }: ConfirmationProps) => {
+  const { refreshOnboardingStatus } = useAuth();
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleGoToDashboard = async () => {
+    try {
+      setIsNavigating(true);
+      
+      // Refrescar el estado de onboarding para asegurar que se detecte el perfil completo
+      await refreshOnboardingStatus();
+      
+      // Pequeña pausa para asegurar que el estado se actualice
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Redirigir al dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error navegando al dashboard:', error);
+      // En caso de error, intentar redirigir de todas formas
+      router.push('/dashboard');
+    } finally {
+      setIsNavigating(false);
+    }
+  };
   const roleInfo = {
     [UserRole.ACTOR]: {
       title: 'Actor/Talento',
@@ -142,11 +169,19 @@ const Confirmation = ({ role, onComplete }: ConfirmationProps) => {
       {/* Action Button */}
       <div className="pt-4">
         <Button
-          onClick={onComplete}
+          onClick={handleGoToDashboard}
           size="lg"
           className="px-8 py-3"
+          disabled={isNavigating}
         >
-          Ir a Talent Link
+          {isNavigating ? (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              <span>Cargando...</span>
+            </div>
+          ) : (
+            'Ir a TalentLink'
+          )}
         </Button>
       </div>
 
