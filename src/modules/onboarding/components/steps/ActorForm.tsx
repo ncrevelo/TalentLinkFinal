@@ -16,7 +16,7 @@ const ActorForm = ({ onSubmit, onBack, loading }: ActorFormProps) => {
     firstName: '',
     lastName: '',
     dateOfBirth: new Date(),
-    gender: 'prefer-not-to-say',
+    gender: 'prefiero-no-decir',
     nationality: '',
     location: {
       department: '',
@@ -169,14 +169,14 @@ const ActorForm = ({ onSubmit, onBack, loading }: ActorFormProps) => {
               Género
             </label>
             <select
-              value={formData.gender || 'prefer-not-to-say'}
+              value={formData.gender || 'prefiero-no-decir'}
               onChange={(e) => handleInputChange('gender', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="male">Masculino</option>
-              <option value="female">Femenino</option>
-              <option value="other">Otro</option>
-              <option value="prefer-not-to-say">Prefiero no decir</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
+              <option value="otro">Otro</option>
+              <option value="prefiero-no-decir">Prefiero no decir</option>
             </select>
           </div>
           <Input

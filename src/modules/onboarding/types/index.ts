@@ -2,8 +2,8 @@
 
 export enum UserRole {
   ACTOR = 'actor',
-  HIRER = 'hirer',
-  ADMIN = 'admin'
+  HIRER = 'contratante',
+  ADMIN = 'administrador'
 }
 
 export enum ColombiaDepartment {
@@ -42,11 +42,11 @@ export enum ColombiaDepartment {
 }
 
 export enum ExperienceLevel {
-  BEGINNER = 'beginner',
-  INTERMEDIATE = 'intermediate',
-  ADVANCED = 'advanced',
-  PROFESSIONAL = 'professional',
-  EXPERT = 'expert'
+  BEGINNER = 'principiante',
+  INTERMEDIATE = 'intermedio',
+  ADVANCED = 'avanzado',
+  PROFESSIONAL = 'profesional',
+  EXPERT = 'experto'
 }
 
 export interface BaseUserProfile {
@@ -69,7 +69,7 @@ export interface ActorProfile extends BaseUserProfile {
     firstName: string;
     lastName: string;
     dateOfBirth: Date;
-    gender: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+    gender: 'masculino' | 'femenino' | 'otro' | 'prefiero-no-decir';
     nationality: string;
     location: {
       department: string;
@@ -146,7 +146,7 @@ export interface HirerProfile extends BaseUserProfile {
     
     // Información profesional
     industry: string;
-    companySize?: 'individual' | 'small' | 'medium' | 'large' | 'enterprise';
+    companySize?: 'individual' | 'pequena' | 'mediana' | 'grande' | 'empresa';
     yearsInBusiness?: number;
     
     // Tipo de proyectos que maneja
@@ -174,43 +174,43 @@ export type UserProfile = ActorProfile | HirerProfile;
 export interface Language {
   code: string; // 'es', 'en', 'fr', etc.
   name: string;
-  level: 'basic' | 'intermediate' | 'advanced' | 'native';
+  level: 'basico' | 'intermedio' | 'avanzado' | 'nativo';
 }
 
 export enum ActorCategory {
-  FILM = 'film',
+  FILM = 'cine',
   TV = 'television',
-  THEATER = 'theater',
-  COMMERCIAL = 'commercial',
-  VOICE_OVER = 'voice_over',
-  MODEL = 'model',
-  DANCER = 'dancer',
-  SINGER = 'singer',
+  THEATER = 'teatro',
+  COMMERCIAL = 'comercial',
+  VOICE_OVER = 'voz_en_off',
+  MODEL = 'modelo',
+  DANCER = 'bailarin',
+  SINGER = 'cantante',
   EXTRA = 'extra',
-  STUNT = 'stunt'
+  STUNT = 'doble_de_accion'
 }
 
 export enum ProjectType {
-  SHORT_FILM = 'short_film',
-  FEATURE_FILM = 'feature_film',
-  TV_SERIES = 'tv_series',
-  TV_COMMERCIAL = 'tv_commercial',
-  MUSIC_VIDEO = 'music_video',
-  CORPORATE_VIDEO = 'corporate_video',
-  DOCUMENTARY = 'documentary',
-  THEATER_PLAY = 'theater_play',
-  PHOTOSHOOT = 'photoshoot',
-  LIVE_EVENT = 'live_event',
-  STREAMING_CONTENT = 'streaming_content'
+  SHORT_FILM = 'cortometraje',
+  FEATURE_FILM = 'largometraje',
+  TV_SERIES = 'serie_tv',
+  TV_COMMERCIAL = 'comercial_tv',
+  MUSIC_VIDEO = 'video_musical',
+  CORPORATE_VIDEO = 'video_corporativo',
+  DOCUMENTARY = 'documental',
+  THEATER_PLAY = 'obra_teatro',
+  PHOTOSHOOT = 'sesion_fotos',
+  LIVE_EVENT = 'evento_en_vivo',
+  STREAMING_CONTENT = 'contenido_streaming'
 }
 
 export enum BudgetRange {
-  UNDER_1M = 'under_1m',
+  UNDER_1M = 'menos_1m',
   BETWEEN_1M_5M = '1m_5m',
   BETWEEN_5M_10M = '5m_10m',
   BETWEEN_10M_25M = '10m_25m',
-  OVER_25M = 'over_25m',
-  PROJECT_BASED = 'project_based'
+  OVER_25M = 'mas_25m',
+  PROJECT_BASED = 'basado_en_proyecto'
 }
 
 // Datos del formulario de onboarding
