@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Input } from '../../../../components/ui/Input';
 import { Button } from '../../../../components/ui/Button';
-import { HirerProfile, ProjectType, BudgetRange } from '../../types';
+import { HirerProfile, ProjectType, BudgetRange, ColombiaDepartment } from '../../types';
 
 interface HirerFormProps {
   onSubmit: (data: HirerProfile['hirerData']) => void;
@@ -22,7 +22,7 @@ const HirerForm = ({ onSubmit, onBack, loading }: HirerFormProps) => {
     location: {
       address: '',
       city: '',
-      state: '',
+      department: '',
       country: 'Colombia',
       postalCode: ''
     },
@@ -87,6 +87,10 @@ const HirerForm = ({ onSubmit, onBack, loading }: HirerFormProps) => {
       newErrors['location.city'] = 'La ciudad es requerida';
     }
 
+    if (!formData.location?.department?.trim()) {
+      newErrors['location.department'] = 'El departamento es requerido';
+    }
+
     if (!formData.industry?.trim()) {
       newErrors['industry'] = 'La industria es requerida';
     }
@@ -119,6 +123,7 @@ const HirerForm = ({ onSubmit, onBack, loading }: HirerFormProps) => {
 
   const projectTypes = Object.values(ProjectType);
   const budgetRanges = Object.values(BudgetRange);
+  const departments = Object.values(ColombiaDepartment);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -239,12 +244,26 @@ const HirerForm = ({ onSubmit, onBack, loading }: HirerFormProps) => {
             error={errors['location.city']}
             placeholder="Tu ciudad"
           />
-          <Input
-            label="Departamento/Estado"
-            value={formData.location?.state || ''}
-            onChange={(e) => handleInputChange('location.state', e.target.value)}
-            placeholder="Departamento"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Departamento *
+            </label>
+            <select
+              value={formData.location?.department || ''}
+              onChange={(e) => handleInputChange('location.department', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Selecciona un departamento</option>
+              {departments.map((department) => (
+                <option key={department} value={department}>
+                  {department}
+                </option>
+              ))}
+            </select>
+            {errors['location.department'] && (
+              <p className="text-red-500 text-sm mt-1">{errors['location.department']}</p>
+            )}
+          </div>
           <Input
             label="Código Postal"
             value={formData.location?.postalCode || ''}
@@ -279,10 +298,10 @@ const HirerForm = ({ onSubmit, onBack, loading }: HirerFormProps) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="individual">Individual</option>
-              <option value="small">Pequeña (1-10 empleados)</option>
-              <option value="medium">Mediana (11-50 empleados)</option>
-              <option value="large">Grande (51-200 empleados)</option>
-              <option value="enterprise">Empresa (200+ empleados)</option>
+              <option value="pequena">Pequeña (1-10 empleados)</option>
+              <option value="mediana">Mediana (11-50 empleados)</option>
+              <option value="grande">Grande (51-200 empleados)</option>
+              <option value="empresa">Empresa (200+ empleados)</option>
             </select>
           </div>
         </div>
