@@ -23,11 +23,13 @@ export interface RegisterCredentials {
 export interface AuthContextType {
   user: FirebaseUser | null;
   loading: boolean;
+  needsOnboarding: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshOnboardingStatus: () => Promise<void>;
 }
 
 export interface AuthError {

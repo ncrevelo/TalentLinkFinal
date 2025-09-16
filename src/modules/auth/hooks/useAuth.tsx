@@ -2,8 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
+import { useRouter, usePathname } from 'next/navigation';
 import { auth } from '../../../shared/config/firebase';
 import { AuthService } from '../services/AuthService';
+import { UserProfileService } from '../../onboarding/services/UserProfileService';
 import { AuthContextType } from '../types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +22,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const checkOnboardingStatus = async (user: User) => {
+    try {
+      const needsOnboardingCheck = await UserProfileService.needsOnboarding(user.uid);
+      setNeedsOnboarding(needsOnboardingCheck);
+      return !needsOnboardingCheck; // Return true if profile is complete
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setNeedsOnboarding(true);
+      return false;
+    }
+  };
+
+  const refreshOnboardingStatus = async () => {
+    if (user) {
+      await checkOnboardingStatus(user);
+    }
+  };
 
   useEffect(() => {
     // Solo inicializar en el cliente
@@ -27,14 +50,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      
+      if (user) {
+        await checkOnboardingStatus(user);
+      } else {
+        setNeedsOnboarding(false);
+      }
+      
       setLoading(false);
       setInitialized(true);
     });
 
     return unsubscribe;
   }, []);
+
+  // Redirección automática para onboarding
+  useEffect(() => {
+    if (!loading && initialized && user) {
+      if (needsOnboarding) {
+        // Solo redirigir si no está ya en la página de onboarding
+        if (pathname !== '/onboarding') {
+          router.push('/onboarding');
+        }
+      } else {
+        // Si el perfil está completo y está en onboarding, redirigir al dashboard
+        if (pathname === '/onboarding') {
+          router.push('/dashboard');
+        }
+      }
+    }
+  }, [user, needsOnboarding, loading, initialized, pathname, router]);
 
   // Si estamos en el servidor, renderizar inmediatamente
   useEffect(() => {
@@ -66,11 +113,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading: loading || !initialized,
+    needsOnboarding,
     signIn,
     signUp,
     signInWithGoogle,
     signOut,
-    resetPassword
+    resetPassword,
+    refreshOnboardingStatus
   };
 
   return (
