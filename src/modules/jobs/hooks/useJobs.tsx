@@ -348,6 +348,9 @@ export const useJob = (jobId: string): UseJobReturn => {
   return { ...state, refetch };
 };
 
+// Alias for useJob for backward compatibility and clarity
+export const useJobById = useJob;
+
 interface UseDeletedJobsState {
   deletedJobs: DeletedJob[];
   loading: boolean;

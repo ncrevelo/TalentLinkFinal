@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useJobCreate } from '../hooks/useJobs';
-import { Job, JobType, JobStatus, Department, ExperienceLevel, WorkModality, JobCreateRequest } from '../types';
+import React, { useState, useEffect } from 'react';
+import { useJobUpdate } from '../hooks/useJobs';
+import { Job, JobType, Department, ExperienceLevel, WorkModality, JobUpdateRequest } from '../types';
 import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent, Alert } from '../../../components/ui';
 
 // Datos estáticos para departamentos de Colombia
@@ -64,37 +64,69 @@ const EXPERIENCE_LEVELS = [
   { value: ExperienceLevel.EXECUTIVE, label: 'Ejecutivo/Directivo' },
 ];
 
-interface JobCreateFormProps {
+interface JobEditFormProps {
+  job: Job;
   onSuccess?: (job: Job) => void;
   onCancel?: () => void;
 }
 
-export const JobCreateForm: React.FC<JobCreateFormProps> = ({
+export const JobEditForm: React.FC<JobEditFormProps> = ({
+  job,
   onSuccess,
   onCancel,
 }) => {
-  const { createJob, creating, error } = useJobCreate();
+  const { updateJob, updating, error, success } = useJobUpdate();
   
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    requirements: '',
-    responsibilities: '',
-    benefits: '',
-    department: '' as Department | '',
-    jobType: '' as JobType | '',
-    workModality: WorkModality.ON_SITE,
-    experienceLevel: '' as ExperienceLevel | '',
-    salaryMin: '',
-    salaryMax: '',
-    currency: 'COP' as 'COP' | 'USD',
-    positions: '1',
-    deadlineDate: '',
-    skills: '',
-    tags: '',
+    title: job.title,
+    description: job.description,
+    requirements: job.requirements.join('\n'),
+    benefits: job.benefits.join('\n'),
+    department: job.department,
+    jobType: job.jobType,
+    workModality: job.workModality,
+    experienceLevel: job.experienceLevel,
+    salaryMin: job.salaryRange.min > 0 ? job.salaryRange.min.toString() : '',
+    salaryMax: job.salaryRange.max > 0 ? job.salaryRange.max.toString() : '',
+    currency: job.salaryRange.currency || 'COP',
+    positions: job.positionsAvailable.toString(),
+    deadlineDate: job.deadline.toISOString().split('T')[0],
+    tags: job.tags.join(', '),
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Check for changes
+  useEffect(() => {
+    const originalData = {
+      title: job.title,
+      description: job.description,
+      requirements: job.requirements.join('\n'),
+      benefits: job.benefits.join('\n'),
+      department: job.department,
+      jobType: job.jobType,
+      workModality: job.workModality,
+      experienceLevel: job.experienceLevel,
+      salaryMin: job.salaryRange.min > 0 ? job.salaryRange.min.toString() : '',
+      salaryMax: job.salaryRange.max > 0 ? job.salaryRange.max.toString() : '',
+      currency: job.salaryRange.currency || 'COP',
+      positions: job.positionsAvailable.toString(),
+      deadlineDate: job.deadline.toISOString().split('T')[0],
+      tags: job.tags.join(', '),
+    };
+
+    const currentDataString = JSON.stringify(formData);
+    const originalDataString = JSON.stringify(originalData);
+    setHasChanges(currentDataString !== originalDataString);
+  }, [formData, job]);
+
+  // Handle success
+  useEffect(() => {
+    if (success) {
+      onSuccess?.(job);
+    }
+  }, [success, job, onSuccess]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -136,11 +168,11 @@ export const JobCreateForm: React.FC<JobCreateFormProps> = ({
       newErrors.deadlineDate = 'La fecha límite es requerida';
     } else {
       const deadline = new Date(formData.deadlineDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const creationDate = new Date(job.createdAt);
+      creationDate.setHours(0, 0, 0, 0);
       
-      if (deadline <= today) {
-        newErrors.deadlineDate = 'La fecha límite debe ser posterior a la fecha actual';
+      if (deadline <= creationDate) {
+        newErrors.deadlineDate = 'La fecha límite debe ser posterior a la fecha de creación del trabajo';
       }
     }
 
@@ -169,15 +201,20 @@ export const JobCreateForm: React.FC<JobCreateFormProps> = ({
       return;
     }
 
+    if (!hasChanges) {
+      onCancel?.();
+      return;
+    }
+
     try {
-      const jobData: JobCreateRequest = {
+      const updateData: JobUpdateRequest = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         department: formData.department as Department,
         salaryRange: {
           min: formData.salaryMin ? parseFloat(formData.salaryMin) : 0,
           max: formData.salaryMax ? parseFloat(formData.salaryMax) : 0,
-          currency: formData.currency,
+          currency: formData.currency as 'COP' | 'USD',
           negotiable: !formData.salaryMin || !formData.salaryMax
         },
         jobType: formData.jobType as JobType,
@@ -190,27 +227,61 @@ export const JobCreateForm: React.FC<JobCreateFormProps> = ({
         tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       };
 
-      const jobId = await createJob(jobData);
-      if (jobId) {
-        // Since createJob returns the ID, we'll assume success
-        onSuccess?.({} as Job); // Pass a placeholder - the parent can handle the actual job data
-      }
+      await updateJob(job.id, updateData);
     } catch (err) {
-      console.error('Error creating job:', err);
+      console.error('Error updating job:', err);
     }
   };
 
+  const handleReset = () => {
+    setFormData({
+      title: job.title,
+      description: job.description,
+      requirements: job.requirements.join('\n'),
+      benefits: job.benefits.join('\n'),
+      department: job.department,
+      jobType: job.jobType,
+      workModality: job.workModality,
+      experienceLevel: job.experienceLevel,
+      salaryMin: job.salaryRange.min > 0 ? job.salaryRange.min.toString() : '',
+      salaryMax: job.salaryRange.max > 0 ? job.salaryRange.max.toString() : '',
+      currency: job.salaryRange.currency || 'COP',
+      positions: job.positionsAvailable.toString(),
+      deadlineDate: job.deadline.toISOString().split('T')[0],
+      tags: job.tags.join(', '),
+    });
+    setErrors({});
+  };
+
   const today = new Date().toISOString().split('T')[0];
+  const creationDate = job.createdAt.toISOString().split('T')[0];
 
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Crear Nueva Postulación de Casting</CardTitle>
+        <CardTitle>Editar Postulación de Casting</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Creado: {job.createdAt.toLocaleDateString('es-CO')} | 
+            Última actualización: {job.updatedAt.toLocaleDateString('es-CO')}
+          </div>
+          {hasChanges && (
+            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+              Cambios sin guardar
+            </span>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {error && (
           <Alert type="error" className="mb-6">
             {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert type="success" className="mb-6">
+            El trabajo se ha actualizado exitosamente.
           </Alert>
         )}
 
@@ -285,10 +356,10 @@ export const JobCreateForm: React.FC<JobCreateFormProps> = ({
                 onChange={(e) => handleInputChange('deadlineDate', e.target.value)}
                 error={errors.deadlineDate}
                 required
-                min={today}
+                min={creationDate}
               />
               <p className="text-xs text-gray-500 mt-1">
-                La fecha debe ser posterior al día de hoy
+                Fecha mínima: {new Date(job.createdAt).toLocaleDateString('es-CO')} (fecha de creación)
               </p>
             </div>
           </div>
@@ -353,19 +424,6 @@ export const JobCreateForm: React.FC<JobCreateFormProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Responsabilidades y deberes (opcional)
-              </label>
-              <textarea
-                value={formData.responsibilities}
-                onChange={(e) => handleInputChange('responsibilities', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="• Participar en ensayos&#10;• Memorizar guion&#10;• Trabajar con el director en la interpretación"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Requisitos del perfil (opcional)
               </label>
               <textarea
@@ -374,17 +432,6 @@ export const JobCreateForm: React.FC<JobCreateFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
                 placeholder="• Rango de edad (ej. 25-35 años)&#10;• Habilidad para improvisar&#10;• Portafolio o reel de actuación"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Habilidades (separadas por comas)
-              </label>
-              <Input
-                value={formData.skills}
-                onChange={(e) => handleInputChange('skills', e.target.value)}
-                placeholder="ej. teatro, cine, drama, comedia, voz en off, canto"
               />
             </div>
 
@@ -414,24 +461,39 @@ export const JobCreateForm: React.FC<JobCreateFormProps> = ({
           </div>
 
           {/* Botones */}
-          <div className="flex justify-end space-x-4 pt-6 border-t">
-            {onCancel && (
+          <div className="flex justify-between pt-6 border-t">
+            <div className="flex space-x-2">
+              {hasChanges && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleReset}
+                  disabled={updating}
+                >
+                  Revertir Cambios
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex space-x-4">
+              {onCancel && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onCancel}
+                  disabled={updating}
+                >
+                  Cancelar
+                </Button>
+              )}
               <Button
-                type="button"
-                variant="secondary"
-                onClick={onCancel}
-                disabled={creating}
+                type="submit"
+                disabled={updating || !hasChanges}
+                className="min-w-32"
               >
-                Cancelar
+                {updating ? 'Guardando...' : hasChanges ? 'Guardar Cambios' : 'Sin Cambios'}
               </Button>
-            )}
-            <Button
-              type="submit"
-              disabled={creating}
-              className="min-w-32"
-            >
-              {creating ? 'Guardando...' : 'Publicar Casting'}
-            </Button>
+            </div>
           </div>
         </form>
       </CardContent>
