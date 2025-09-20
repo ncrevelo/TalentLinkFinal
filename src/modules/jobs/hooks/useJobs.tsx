@@ -351,6 +351,55 @@ export const useJob = (jobId: string): UseJobReturn => {
 // Alias for useJob for backward compatibility and clarity
 export const useJobById = useJob;
 
+interface UseHiringStageState {
+  advancing: boolean;
+  error: string | null;
+  success: boolean;
+}
+
+interface UseHiringStageReturn extends UseHiringStageState {
+  advanceStage: (jobId: string, newStage: any, notes?: string) => Promise<boolean>;
+  reset: () => void;
+}
+
+export const useHiringStage = (): UseHiringStageReturn => {
+  const { user } = useAuth();
+  const [state, setState] = useState<UseHiringStageState>({
+    advancing: false,
+    error: null,
+    success: false
+  });
+
+  const advanceStage = useCallback(async (jobId: string, newStage: any, notes?: string): Promise<boolean> => {
+    if (!user?.uid) {
+      setState(prev => ({ ...prev, error: 'User not authenticated' }));
+      return false;
+    }
+
+    try {
+      setState(prev => ({ ...prev, advancing: true, error: null, success: false }));
+      
+      await jobService.advanceHiringStage(jobId, newStage, user.uid, notes);
+      
+      setState(prev => ({ ...prev, advancing: false, success: true }));
+      return true;
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        advancing: false,
+        error: error instanceof Error ? error.message : 'Failed to advance hiring stage'
+      }));
+      return false;
+    }
+  }, [user?.uid]);
+
+  const reset = useCallback(() => {
+    setState({ advancing: false, error: null, success: false });
+  }, []);
+
+  return { ...state, advanceStage, reset };
+};
+
 interface UseDeletedJobsState {
   deletedJobs: DeletedJob[];
   loading: boolean;

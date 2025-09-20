@@ -2,14 +2,15 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { JobList } from '@/modules/jobs';
-import { Job } from '@/modules/jobs/types';
+import { JobList, HiringStageManager } from '@/modules/jobs';
+import { Job, HIRING_STAGES } from '@/modules/jobs/types';
 import { Button, Modal, ModalBody, ModalFooter } from '@/components/ui';
 
 export default function ManageJobsPage() {
   const router = useRouter();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showStageManager, setShowStageManager] = useState(false);
 
   const handleEditJob = (job: Job) => {
     // Navigate to edit page (we could create this later)
@@ -19,6 +20,11 @@ export default function ManageJobsPage() {
   const handleViewJob = (job: Job) => {
     setSelectedJob(job);
     setShowDetailsModal(true);
+  };
+
+  const handleManageStages = (job: Job) => {
+    setSelectedJob(job);
+    setShowStageManager(true);
   };
 
   const handleCreateNew = () => {
@@ -70,6 +76,7 @@ export default function ManageJobsPage() {
       <JobList
         onEditJob={handleEditJob}
         onViewJob={handleViewJob}
+        onManageStages={handleManageStages}
       />
 
       {/* Job Details Modal */}
@@ -184,6 +191,32 @@ export default function ManageJobsPage() {
               Editar Trabajo
             </Button>
           )}
+        </ModalFooter>
+      </Modal>
+
+      {/* Hiring Stage Management Modal */}
+      <Modal
+        isOpen={showStageManager}
+        onClose={() => setShowStageManager(false)}
+        title={`Gestionar Proceso: ${selectedJob?.title || ''}`}
+        size="lg"
+      >
+        <ModalBody>
+          {selectedJob && (
+            <HiringStageManager
+              job={selectedJob}
+              onStageChanged={() => {
+                setShowStageManager(false);
+                // You might want to refresh the job list here
+              }}
+            />
+          )}
+        </ModalBody>
+        
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setShowStageManager(false)}>
+            Cerrar
+          </Button>
         </ModalFooter>
       </Modal>
     </div>

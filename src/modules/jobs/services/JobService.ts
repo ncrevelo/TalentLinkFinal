@@ -29,7 +29,10 @@ import {
   DeletedJob,
   JobStats,
   JobSortField,
-  Department
+  Department,
+  HiringStage,
+  StageTransition,
+  HIRING_STAGES
 } from '../types';
 
 export class JobService {
@@ -60,7 +63,15 @@ export class JobService {
           interviewsScheduled: 0,
           offersExtended: 0,
           hiredCandidates: 0,
-          progressPercentage: 0
+          progressPercentage: 0,
+          currentStage: HiringStage.RECEIVING_APPLICATIONS,
+          stageHistory: [{
+            fromStage: null,
+            toStage: HiringStage.RECEIVING_APPLICATIONS,
+            transitionDate: now,
+            performedBy: userId,
+            notes: 'Trabajo creado'
+          }]
         },
         searchTerms,
         tags: jobData.tags || []
@@ -429,12 +440,34 @@ export class JobService {
   }
 
   private convertFirestoreJob(data: any): Job {
+    // Ensure progress has the correct structure for backward compatibility
+    const progress = {
+      applicationsReceived: data.progress?.applicationsReceived || 0,
+      applicationsReviewed: data.progress?.applicationsReviewed || 0,
+      interviewsScheduled: data.progress?.interviewsScheduled || 0,
+      offersExtended: data.progress?.offersExtended || 0,
+      hiredCandidates: data.progress?.hiredCandidates || 0,
+      progressPercentage: data.progress?.progressPercentage || 0,
+      currentStage: data.progress?.currentStage || HiringStage.RECEIVING_APPLICATIONS,
+      stageHistory: data.progress?.stageHistory?.map((transition: any) => ({
+        ...transition,
+        transitionDate: transition.transitionDate.toDate()
+      })) || [{
+        fromStage: null,
+        toStage: HiringStage.RECEIVING_APPLICATIONS,
+        transitionDate: data.createdAt.toDate(),
+        performedBy: data.createdBy,
+        notes: 'Trabajo creado'
+      }]
+    };
+
     return {
       ...data,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
       deadline: data.deadline.toDate(),
-      deletedAt: data.deletedAt ? data.deletedAt.toDate() : undefined
+      deletedAt: data.deletedAt ? data.deletedAt.toDate() : undefined,
+      progress
     } as Job;
   }
 
@@ -480,6 +513,109 @@ export class JobService {
     } catch (error) {
       console.error('Error toggling job status:', error);
       throw new Error('Failed to toggle job status');
+    }
+  }
+
+  /**
+   * Advance hiring stage
+   */
+  async advanceHiringStage(jobId: string, newStage: HiringStage, userId: string, notes?: string): Promise<void> {
+    try {
+      const job = await this.getJobById(jobId);
+      
+      if (!job || job.createdBy !== userId) {
+        throw new Error('Job not found or unauthorized');
+      }
+
+      const currentStage = job.progress.currentStage;
+      const currentStageInfo = HIRING_STAGES[currentStage];
+      const newStageInfo = HIRING_STAGES[newStage];
+
+      // Validate stage progression (can only advance, not go backwards)
+      if (newStageInfo.order <= currentStageInfo.order) {
+        throw new Error('Cannot move to a previous stage');
+      }
+
+      const now = new Date();
+      const newTransition: StageTransition = {
+        fromStage: currentStage,
+        toStage: newStage,
+        transitionDate: now,
+        performedBy: userId,
+        notes
+      };
+
+      // Update the job progress
+      const updatedProgress = {
+        ...job.progress,
+        currentStage: newStage,
+        stageHistory: [...job.progress.stageHistory, newTransition]
+      };
+
+      // Update job status based on stage
+      let newStatus = job.status;
+      if (newStage === HiringStage.CLOSED) {
+        newStatus = JobStatus.FILLED;
+      } else if (newStage === HiringStage.RECEIVING_APPLICATIONS) {
+        newStatus = JobStatus.ACTIVE;
+      }
+
+      await updateDoc(doc(db, this.JOBS_COLLECTION, jobId), {
+        progress: updatedProgress,
+        status: newStatus,
+        updatedAt: Timestamp.fromDate(now)
+      });
+    } catch (error) {
+      console.error('Error advancing hiring stage:', error);
+      throw new Error('Failed to advance hiring stage');
+    }
+  }
+
+  /**
+   * Get jobs visible to candidates (only those in receiving applications stage)
+   */
+  async getPublicJobs(filters: JobFilters = {}): Promise<{ jobs: Job[]; hasMore: boolean }> {
+    try {
+      let q = query(
+        collection(db, this.JOBS_COLLECTION),
+        where('isDeleted', '==', false),
+        where('status', '==', JobStatus.ACTIVE),
+        where('progress.currentStage', '==', HiringStage.RECEIVING_APPLICATIONS)
+      );
+
+      // Apply common filters
+      if (filters.department && filters.department.length > 0) {
+        q = query(q, where('department', 'in', filters.department));
+      }
+
+      if (filters.jobType && filters.jobType.length > 0) {
+        q = query(q, where('jobType', 'in', filters.jobType));
+      }
+
+      // Check deadline hasn't passed
+      const now = new Date();
+      q = query(q, where('deadline', '>', Timestamp.fromDate(now)));
+
+      // Apply sorting
+      const sortField = filters.sortBy || JobSortField.CREATED_AT;
+      const sortOrder = filters.sortOrder || 'desc';
+      q = query(q, orderBy(sortField, sortOrder));
+
+      // Apply limit
+      const pageLimit = filters.limit || 20;
+      q = query(q, limit(pageLimit));
+
+      const querySnapshot = await getDocs(q);
+      const jobs: Job[] = [];
+
+      querySnapshot.docs.forEach((doc) => {
+        jobs.push(this.convertFirestoreJob({ id: doc.id, ...doc.data() } as any));
+      });
+
+      return { jobs, hasMore: false }; // Simplified for public view
+    } catch (error) {
+      console.error('Error getting public jobs:', error);
+      throw new Error('Failed to fetch public jobs');
     }
   }
 }

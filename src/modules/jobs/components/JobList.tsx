@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useJobs, useJobUpdate } from '../hooks/useJobs';
-import { Job, JobFilters, JobStatus, JobType, Department, ExperienceLevel, WorkModality } from '../types';
+import { Job, JobFilters, JobStatus, JobType, Department, ExperienceLevel, WorkModality, HIRING_STAGES } from '../types';
 import { 
   Button, 
   Input, 
@@ -23,9 +23,10 @@ import {
 interface JobListProps {
   onEditJob?: (job: Job) => void;
   onViewJob?: (job: Job) => void;
+  onManageStages?: (job: Job) => void;
 }
 
-export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob }) => {
+export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob, onManageStages }) => {
   const [filters, setFilters] = useState<JobFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<Job | null>(null);
@@ -233,6 +234,11 @@ export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob }) => {
                         {job.workModality === WorkModality.ON_SITE ? 'Presencial' :
                          job.workModality === WorkModality.REMOTE ? 'Remoto' : 'Híbrido'}
                       </Badge>
+                      {job.progress?.currentStage && (
+                        <Badge variant="primary" size="sm">
+                          {HIRING_STAGES[job.progress.currentStage]?.label || 'Estado desconocido'}
+                        </Badge>
+                      )}
                     </div>
 
                     <p className="text-gray-600 text-sm mb-3 line-clamp-2">
@@ -305,6 +311,16 @@ export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob }) => {
                     >
                       Ver Detalles
                     </Button>
+
+                    {onManageStages && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => onManageStages(job)}
+                      >
+                        Gestionar Proceso
+                      </Button>
+                    )}
                     
                     <Button
                       size="sm"
