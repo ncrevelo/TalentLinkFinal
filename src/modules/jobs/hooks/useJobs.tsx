@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { jobService } from '../services';
