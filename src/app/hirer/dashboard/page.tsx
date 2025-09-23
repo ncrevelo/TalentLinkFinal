@@ -7,16 +7,8 @@ import { Card, CardContent, Button } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 
 export default function HirerDashboardPage() {
-  const { user, userProfile, signOut } = useAuth();
+  const { user, userProfile } = useAuth();
   const router = useRouter();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  };
 
   const handleCreateJob = () => {
     router.push('/hirer/jobs/create');
@@ -75,26 +67,16 @@ export default function HirerDashboardPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header personalizado */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <span className="text-4xl mr-3">🎬</span>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                ¡Hola, {getCompanyName()}! 🎬
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Dashboard de Contratante
-              </p>
-            </div>
+        <div className="flex items-center mb-4">
+          <span className="text-4xl mr-3">🎬</span>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              ¡Hola, {getCompanyName()}! 🎬
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Dashboard de Contratante
+            </p>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleSignOut}
-            className="text-red-600 border-red-300 hover:bg-red-50"
-          >
-            Cerrar Sesión
-          </Button>
         </div>
 
         {/* Tarjeta de perfil */}

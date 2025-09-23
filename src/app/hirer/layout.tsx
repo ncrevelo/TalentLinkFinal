@@ -3,13 +3,28 @@
 import React from 'react';
 import { useAuth } from '@/modules/auth';
 import { ProtectedRoute } from '@/shared/components';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui';
 
 export default function HirerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
+
+  const handleGoToHome = () => {
+    router.push('/');
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -18,43 +33,30 @@ export default function HirerLayout({
         <div className="bg-white shadow-sm border-b">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center">
                 <h1 className="text-xl font-semibold text-gray-900">
                   Panel del Contratante
                 </h1>
               </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  Bienvenido, {user?.displayName || user?.email}
-                </span>
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleGoToHome}
+                  className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  Ir a Inicio
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  Cerrar Sesión
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Navigation tabs */}
-        <div className="bg-white border-b">
-          <div className="container mx-auto px-4">
-            <nav className="flex space-x-8">
-              <a
-                href="/hirer/dashboard"
-                className="py-4 px-1 border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 font-medium text-sm"
-              >
-                Dashboard
-              </a>
-              <a
-                href="/hirer/jobs/create"
-                className="py-4 px-1 border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 font-medium text-sm"
-              >
-                Crear Trabajo
-              </a>
-              <a
-                href="/hirer/jobs/manage"
-                className="py-4 px-1 border-b-2 border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 font-medium text-sm"
-              >
-                Gestionar Trabajos
-              </a>
-            </nav>
           </div>
         </div>
 
