@@ -78,48 +78,50 @@ export default function HirerDashboardPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
       {/* Header personalizado */}
-      <div className="mb-8">
-        <div className="flex items-center mb-4">
-          <span className="text-4xl mr-3">🎬</span>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              ¡Hola, {getCompanyName()}! 🎬
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Dashboard de Contratante
-            </p>
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center mb-4 space-y-3 sm:space-y-0">
+          <div className="flex items-center">
+            <span className="text-3xl sm:text-4xl mr-3">🎬</span>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+                ¡Hola, {getCompanyName()}! 🎬
+              </h1>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">
+                Dashboard de Contratante
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Tarjeta de perfil */}
         <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-bold mx-auto sm:mx-0">
                   🎬
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">
+                <div className="text-center sm:text-left">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                     {getCompanyName()}
                   </h2>
-                  <p className="text-gray-600">Contratante</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-gray-600 text-sm sm:text-base">Contratante</p>
+                  <p className="text-xs sm:text-sm text-gray-500">
                     Miembro desde {getMemberSince()}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     Último acceso: {getLastAccess()}
                   </p>
                 </div>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full lg:w-auto">
                 <Button 
                   variant="primary" 
                   size="sm"
                   onClick={handleCreateJob}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                 >
                   Crear Trabajo
                 </Button>
@@ -127,11 +129,15 @@ export default function HirerDashboardPage() {
                   variant="outline" 
                   size="sm"
                   onClick={handleManageJobs}
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 w-full sm:w-auto"
                 >
                   Gestionar Trabajos
                 </Button>
-                <Button variant="secondary" size="sm">
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
                   Editar Perfil
                 </Button>
               </div>
