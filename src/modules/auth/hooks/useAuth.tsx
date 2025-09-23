@@ -7,6 +7,7 @@ import { auth } from '../../../shared/config/firebase';
 import { AuthService } from '../services/AuthService';
 import { UserProfileService } from '../../onboarding/services/UserProfileService';
 import { AuthContextType } from '../types';
+import { UserRole } from '../../onboarding/types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -30,10 +32,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const needsOnboardingCheck = await UserProfileService.needsOnboarding(user.uid);
       setNeedsOnboarding(needsOnboardingCheck);
+      
+      // Si el usuario no necesita onboarding, obtener su perfil
+      if (!needsOnboardingCheck) {
+        const profile = await UserProfileService.getUserProfile(user.uid);
+        setUserProfile(profile);
+        
+        // Actualizar último acceso
+        if (profile?.role) {
+          await AuthService.updateLastAccess(user.uid, profile.role);
+        }
+        
+        // Redirección inmediata después de cargar el perfil
+        if (profile?.role === UserRole.HIRER && (pathname === '/auth/login' || pathname === '/onboarding' || pathname === '/dashboard')) {
+          router.push('/hirer/dashboard');
+        } else if (profile?.role === UserRole.ACTOR && (pathname === '/auth/login' || pathname === '/onboarding')) {
+          router.push('/dashboard');
+        }
+      } else {
+        setUserProfile(null);
+        // Si necesita onboarding y no está ya ahí, redirigir
+        if (pathname !== '/onboarding') {
+          router.push('/onboarding');
+        }
+      }
+      
       return !needsOnboardingCheck; // Return true if profile is complete
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       setNeedsOnboarding(true);
+      setUserProfile(null);
       return false;
     }
   };
@@ -66,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  // Redirección automática para onboarding
+  // Redirección automática para onboarding y dashboard
   useEffect(() => {
     if (!loading && initialized && user) {
       if (needsOnboarding) {
@@ -74,14 +102,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (pathname !== '/onboarding') {
           router.push('/onboarding');
         }
-      } else {
-        // Si el perfil está completo y está en onboarding, redirigir al dashboard
-        if (pathname === '/onboarding') {
-          router.push('/dashboard');
+      } else if (userProfile) {
+        // Si el perfil está completo, redirigir según el rol
+        if (pathname === '/onboarding' || pathname === '/auth/login') {
+          // Redirección desde onboarding o login
+          if (userProfile.role === 'hirer') {
+            router.push('/hirer/dashboard');
+          } else if (userProfile.role === 'actor') {
+            router.push('/dashboard');
+          } else {
+            router.push('/dashboard');
+          }
+        } else if (pathname === '/dashboard' && userProfile?.role === UserRole.HIRER) {
+          // Redirección específica desde /dashboard para hirers
+          router.push('/hirer/dashboard');
         }
       }
     }
-  }, [user, needsOnboarding, loading, initialized, pathname, router]);
+  }, [user, needsOnboarding, loading, initialized, pathname, router, userProfile]);
 
   // Si estamos en el servidor, renderizar inmediatamente
   useEffect(() => {
@@ -112,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
+    userProfile,
     loading: loading || !initialized,
     needsOnboarding,
     signIn,

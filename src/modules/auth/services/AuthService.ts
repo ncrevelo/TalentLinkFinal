@@ -6,7 +6,8 @@ import {
   sendPasswordResetEmail,
   updateProfile
 } from 'firebase/auth';
-import { auth, googleProvider } from '../../../shared/config/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, googleProvider, db } from '../../../shared/config/firebase';
 import { AuthErrorCodes } from '../types';
 
 export class AuthService {
@@ -95,6 +96,31 @@ export class AuthService {
         return 'Error de conexión. Verifica tu internet.';
       default:
         return 'Ocurrió un error inesperado. Intenta nuevamente.';
+    }
+  }
+
+  /**
+   * Actualiza el último acceso del usuario
+   */
+  static async updateLastAccess(userId: string, userRole: string) {
+    try {
+      const collections = {
+        'actor': 'actor',
+        'contratante': 'hirer',
+        'administrador': 'admin'
+      };
+      
+      const collection = collections[userRole as keyof typeof collections];
+      if (!collection) return;
+
+      const userRef = doc(db, 'talentlink_users', 'users', collection, userId);
+      await updateDoc(userRef, {
+        lastAccess: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error updating last access:', error);
+      // No lanzamos error para no interrumpir el login
     }
   }
 }

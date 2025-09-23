@@ -22,6 +22,7 @@ export interface RegisterCredentials {
 
 export interface AuthContextType {
   user: FirebaseUser | null;
+  userProfile: any | null;
   loading: boolean;
   needsOnboarding: boolean;
   signIn: (email: string, password: string) => Promise<void>;
