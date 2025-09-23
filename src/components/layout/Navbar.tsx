@@ -42,6 +42,12 @@ export const Navbar: React.FC<NavbarProps> = ({ title = 'TalentLink' }) => {
                 Dashboard
               </a>
               <a
+                href={ROUTES.HIRER.DASHBOARD}
+                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Contratante
+              </a>
+              <a
                 href={ROUTES.TALENT.LIST}
                 className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
               >

@@ -21,6 +21,15 @@ export const ROUTES = {
     EDIT: '/talent/edit',
     VIEW: '/talent/view'
   },
+  HIRER: {
+    DASHBOARD: '/hirer/dashboard',
+    JOBS: {
+      CREATE: '/hirer/jobs/create',
+      MANAGE: '/hirer/jobs/manage',
+      EDIT: '/hirer/jobs/edit',
+      VIEW: '/hirer/jobs/view'
+    }
+  },
   ADMIN: {
     USERS: '/admin/users',
     SETTINGS: '/admin/settings',

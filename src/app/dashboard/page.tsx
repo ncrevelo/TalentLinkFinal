@@ -158,14 +158,25 @@ export default function Dashboard() {
                     Acciones Rápidas para Contratantes
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button className="justify-start">
+                    <Button 
+                      className="justify-start"
+                      onClick={() => router.push(ROUTES.HIRER.JOBS.CREATE)}
+                    >
                       ➕ Publicar Nueva Oferta
                     </Button>
-                    <Button variant="outline" className="justify-start">
-                      🔍 Buscar Talentos
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => router.push(ROUTES.HIRER.JOBS.MANAGE)}
+                    >
+                      � Gestionar Ofertas
                     </Button>
-                    <Button variant="outline" className="justify-start">
-                      📊 Gestionar Proyectos
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => router.push(ROUTES.HIRER.DASHBOARD)}
+                    >
+                      � Dashboard Completo
                     </Button>
                   </div>
                 </Card>

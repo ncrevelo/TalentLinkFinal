@@ -46,7 +46,7 @@ export const LoginForm: React.FC = () => {
         setPassword('');
       } else {
         await signIn(email, password);
-        router.push(ROUTES.DASHBOARD);
+        // La redirección se maneja automáticamente en useAuth
       }
     } catch (error: any) {
       setError(error.message);
@@ -61,7 +61,7 @@ export const LoginForm: React.FC = () => {
 
     try {
       await signInWithGoogle();
-      router.push(ROUTES.DASHBOARD);
+      // La redirección se maneja automáticamente en useAuth
     } catch (error: any) {
       setError(error.message);
     }
