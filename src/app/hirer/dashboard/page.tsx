@@ -51,16 +51,30 @@ export default function HirerDashboardPage() {
 
   const getMemberSince = () => {
     if (userProfile?.createdAt) {
-      return formatDate(userProfile.createdAt);
+      try {
+        // Si es un timestamp de Firebase, convertirlo
+        const date = userProfile.createdAt.toDate ? userProfile.createdAt.toDate() : new Date(userProfile.createdAt);
+        return formatDate(date);
+      } catch (error) {
+        console.error('Error parsing createdAt:', error);
+        return 'Fecha no disponible';
+      }
     }
-    return formatDate(new Date());
+    return 'Fecha no disponible';
   };
 
   const getLastAccess = () => {
     if (userProfile?.lastAccess) {
-      return formatLastAccess(userProfile.lastAccess);
+      try {
+        // Si es un timestamp de Firebase, convertirlo
+        const date = userProfile.lastAccess.toDate ? userProfile.lastAccess.toDate() : new Date(userProfile.lastAccess);
+        return formatLastAccess(date);
+      } catch (error) {
+        console.error('Error parsing lastAccess:', error);
+        return 'Fecha no disponible';
+      }
     }
-    return formatLastAccess(new Date());
+    return 'Primera sesión';
   };
 
   return (
@@ -94,6 +108,9 @@ export default function HirerDashboardPage() {
                   <p className="text-gray-600">Contratante</p>
                   <p className="text-sm text-gray-500">
                     Miembro desde {getMemberSince()}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Último acceso: {getLastAccess()}
                   </p>
                 </div>
               </div>

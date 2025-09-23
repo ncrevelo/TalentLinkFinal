@@ -30,20 +30,23 @@ export default function HirerLayout({
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
         {/* Header específico para contratantes */}
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Panel del Contratante
-                </h1>
+                <div className="flex items-center space-x-3">
+                  
+                  <h1 className="text-xl font-semibold text-white">
+                    Panel del Contratante
+                  </h1>
+                </div>
               </div>
               <div className="flex items-center space-x-3">
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={handleGoToHome}
-                  className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                  className="border-white/30 text-black hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all duration-200"
                 >
                   Ir a Inicio
                 </Button>
@@ -51,7 +54,7 @@ export default function HirerLayout({
                   variant="outline" 
                   size="sm"
                   onClick={handleSignOut}
-                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  className="border-red-400 text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 backdrop-blur-sm transition-all duration-200"
                 >
                   Cerrar Sesión
                 </Button>
