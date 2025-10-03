@@ -200,25 +200,35 @@ export class UserProfileService {
       };
 
       // Actualizar en la colección correspondiente
-      let collection = '';
+      let collectionPath = '';
       switch (profile.role) {
         case UserRole.ACTOR:
-          collection = this.COLLECTIONS.ACTOR;
+          collectionPath = `${this.COLLECTIONS.GLOBAL_DATA_USERS}/${this.COLLECTIONS.USERS}/${this.COLLECTIONS.ACTOR}`;
           break;
         case UserRole.HIRER:
-          collection = this.COLLECTIONS.HIRER;
+          collectionPath = `${this.COLLECTIONS.GLOBAL_DATA_USERS}/${this.COLLECTIONS.USERS}/${this.COLLECTIONS.HIRER}`;
           break;
         default:
-          collection = this.COLLECTIONS.ADMIN;
+          collectionPath = `${this.COLLECTIONS.GLOBAL_DATA_USERS}/${this.COLLECTIONS.USERS}/${this.COLLECTIONS.ADMIN}`;
           break;
       }
 
-      await updateDoc(doc(db, collection, uid), updateData);
+      await updateDoc(doc(db, collectionPath, uid), updateData);
 
-      return { success: true, message: 'Perfil actualizado' };
+      return { success: true, message: 'Perfil actualizado exitosamente' };
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      throw new Error('Error al actualizar perfil: ' + error.message);
+      
+      // Dar más información específica sobre errores
+      if (error.code === 'permission-denied') {
+        throw new Error('Error de permisos: No tienes autorización para actualizar este perfil.');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('Usuario no autenticado. Inicia sesión e intenta de nuevo.');
+      } else if (error.code === 'not-found') {
+        throw new Error('El perfil que intentas actualizar no existe.');
+      }
+      
+      throw new Error('Error al actualizar perfil: ' + (error.message || 'Error desconocido'));
     }
   }
 

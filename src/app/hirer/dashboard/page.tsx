@@ -22,6 +22,10 @@ export default function HirerDashboardPage() {
     router.push('/');
   };
 
+  const handleEditProfile = () => {
+    router.push('/hirer/profile/edit');
+  };
+
   // Función para formatear fecha de registro
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('es-CO', {
@@ -136,6 +140,7 @@ export default function HirerDashboardPage() {
                 <Button 
                   variant="secondary" 
                   size="sm"
+                  onClick={handleEditProfile}
                   className="w-full sm:w-auto"
                 >
                   Editar Perfil
