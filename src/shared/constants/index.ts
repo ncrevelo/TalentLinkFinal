@@ -15,6 +15,12 @@ export const ROUTES = {
   },
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
+  ACTOR: {
+    DASHBOARD: '/actor/dashboard',
+    JOBS: '/actor/jobs',
+    APPLICATIONS: '/actor/applications',
+    MESSAGES: '/actor/messages'
+  },
   TALENT: {
     LIST: '/talent',
     CREATE: '/talent/create',

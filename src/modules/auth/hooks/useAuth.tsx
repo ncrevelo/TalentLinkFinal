@@ -8,6 +8,7 @@ import { AuthService } from '../services/AuthService';
 import { UserProfileService } from '../../onboarding/services/UserProfileService';
 import { AuthContextType } from '../types';
 import { UserRole } from '../../onboarding/types';
+import { ROUTES } from '@/shared/constants';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -44,10 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         // Redirección inmediata después de cargar el perfil
-        if (profile?.role === UserRole.HIRER && (pathname === '/auth/login' || pathname === '/onboarding' || pathname === '/dashboard')) {
-          router.push('/hirer/dashboard');
-        } else if (profile?.role === UserRole.ACTOR && (pathname === '/auth/login' || pathname === '/onboarding')) {
-          router.push('/dashboard');
+        const isAuthEntryPoint = ['/auth/login', '/onboarding', ROUTES.DASHBOARD].includes(pathname);
+        if (profile?.role === UserRole.HIRER && isAuthEntryPoint) {
+          router.push(ROUTES.HIRER.DASHBOARD);
+        } else if (profile?.role === UserRole.ACTOR && isAuthEntryPoint) {
+          router.push(ROUTES.ACTOR.DASHBOARD);
         }
       } else {
         setUserProfile(null);
@@ -99,23 +101,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!loading && initialized && user) {
       if (needsOnboarding) {
         // Solo redirigir si no está ya en la página de onboarding
-        if (pathname !== '/onboarding') {
+        if (pathname === '/onboarding') {
           router.push('/onboarding');
         }
       } else if (userProfile) {
         // Si el perfil está completo, redirigir según el rol
         if (pathname === '/onboarding' || pathname === '/auth/login') {
           // Redirección desde onboarding o login
-          if (userProfile.role === 'hirer') {
-            router.push('/hirer/dashboard');
-          } else if (userProfile.role === 'actor') {
-            router.push('/dashboard');
+          if (userProfile.role === UserRole.HIRER) {
+            router.push(ROUTES.HIRER.DASHBOARD);
+          } else if (userProfile.role === UserRole.ACTOR) {
+            router.push(ROUTES.ACTOR.DASHBOARD);
           } else {
-            router.push('/dashboard');
+            router.push(ROUTES.DASHBOARD);
           }
-        } else if (pathname === '/dashboard' && userProfile?.role === UserRole.HIRER) {
+        } else if (pathname === ROUTES.DASHBOARD && userProfile?.role === UserRole.HIRER) {
           // Redirección específica desde /dashboard para hirers
-          router.push('/hirer/dashboard');
+          router.push(ROUTES.HIRER.DASHBOARD);
+        } else if (pathname === ROUTES.DASHBOARD && userProfile?.role === UserRole.ACTOR) {
+          router.push(ROUTES.ACTOR.DASHBOARD);
         }
       }
     }

@@ -138,13 +138,21 @@ export default function Dashboard() {
                     Acciones Rápidas para Actores
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button variant="outline" className="justify-start">
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => router.push(ROUTES.ACTOR.JOBS)}
+                    >
                       📋 Ver Ofertas de Trabajo
                     </Button>
                     <Button variant="outline" className="justify-start">
                       📸 Actualizar Portafolio
                     </Button>
-                    <Button variant="outline" className="justify-start">
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => router.push(ROUTES.ACTOR.APPLICATIONS)}
+                    >
                       📅 Gestionar Disponibilidad
                     </Button>
                   </div>

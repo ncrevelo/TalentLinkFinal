@@ -1,6 +1,10 @@
-import React from 'react';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
+"use client";
+
+import React, { useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../modules/auth/hooks/useAuth';
+import { UserRole } from '../../modules/onboarding/types';
 import { Button } from '../ui';
 import { ROUTES } from '../../shared/constants';
 
@@ -9,8 +13,21 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ title = 'TalentLink' }) => {
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
   const router = useRouter();
+
+  const isActor = userProfile?.role === UserRole.ACTOR;
+  const isHirer = userProfile?.role === UserRole.HIRER;
+
+  const navLinks = useMemo(() => (
+    [
+      { label: 'Dashboard', href: ROUTES.DASHBOARD, visible: !!user },
+      { label: 'Actor', href: ROUTES.ACTOR.DASHBOARD, visible: isActor },
+      { label: 'Contratante', href: ROUTES.HIRER.DASHBOARD, visible: isHirer },
+      { label: 'Talento', href: ROUTES.TALENT.LIST, visible: isHirer || isActor },
+      { label: 'Perfil', href: ROUTES.PROFILE, visible: !!user }
+    ].filter(link => link.visible)
+  ), [user, isActor, isHirer]);
 
   const handleSignOut = async () => {
     try {
@@ -35,30 +52,15 @@ export const Navbar: React.FC<NavbarProps> = ({ title = 'TalentLink' }) => {
           {/* Menú de navegación */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              <a
-                href={ROUTES.DASHBOARD}
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Dashboard
-              </a>
-              <a
-                href={ROUTES.HIRER.DASHBOARD}
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Contratante
-              </a>
-              <a
-                href={ROUTES.TALENT.LIST}
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Talento
-              </a>
-              <a
-                href={ROUTES.PROFILE}
-                className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Perfil
-              </a>
+              {navLinks.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
 
