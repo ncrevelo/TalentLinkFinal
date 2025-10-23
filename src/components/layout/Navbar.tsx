@@ -18,6 +18,11 @@ export const Navbar: React.FC<NavbarProps> = ({ title = 'TalentLink' }) => {
 
   const isActor = userProfile?.role === UserRole.ACTOR;
   const isHirer = userProfile?.role === UserRole.HIRER;
+  const profileLink = isActor
+    ? ROUTES.ACTOR.PROFILE
+    : isHirer
+    ? ROUTES.HIRER.PROFILE
+    : ROUTES.PROFILE;
 
   const navLinks = useMemo(() => (
     [
@@ -25,9 +30,9 @@ export const Navbar: React.FC<NavbarProps> = ({ title = 'TalentLink' }) => {
       { label: 'Actor', href: ROUTES.ACTOR.DASHBOARD, visible: isActor },
       { label: 'Contratante', href: ROUTES.HIRER.DASHBOARD, visible: isHirer },
       { label: 'Talento', href: ROUTES.TALENT.LIST, visible: isHirer || isActor },
-      { label: 'Perfil', href: ROUTES.PROFILE, visible: !!user }
+      { label: 'Perfil', href: profileLink, visible: !!user }
     ].filter(link => link.visible)
-  ), [user, isActor, isHirer]);
+  ), [user, isActor, isHirer, profileLink]);
 
   const handleSignOut = async () => {
     try {

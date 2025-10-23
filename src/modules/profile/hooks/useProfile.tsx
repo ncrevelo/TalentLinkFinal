@@ -2,12 +2,13 @@
 
 import { useState, useCallback } from 'react';
 import { UserProfileService } from '@/modules/onboarding/services/UserProfileService';
-import { HirerProfile } from '@/modules/onboarding/types';
+import { ActorProfile, HirerProfile } from '@/modules/onboarding/types';
 import { useAuth } from '@/modules/auth';
 
 export interface ProfileUpdateRequest {
   displayName?: string;
-  hirerData?: Partial<HirerProfile['hirerData']>;
+  hirerData?: HirerProfile['hirerData'];
+  actorData?: ActorProfile['actorData'];
 }
 
 export const useProfileUpdate = () => {
@@ -53,7 +54,7 @@ export const useProfileUpdate = () => {
 export const useProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<HirerProfile | null>(null);
+  const [profile, setProfile] = useState<ActorProfile | HirerProfile | null>(null);
 
   const getProfile = useCallback(async (uid: string) => {
     try {
@@ -61,13 +62,13 @@ export const useProfile = () => {
       setError(null);
 
       const userProfile = await UserProfileService.getUserProfile(uid);
-      
+
       if (!userProfile) {
         setError('Perfil no encontrado');
         return;
       }
 
-      setProfile(userProfile as HirerProfile);
+      setProfile(userProfile as ActorProfile | HirerProfile);
     } catch (err: any) {
       setError(err.message || 'Error al cargar el perfil');
     } finally {

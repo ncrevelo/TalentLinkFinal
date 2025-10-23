@@ -19,7 +19,8 @@ export const ROUTES = {
     DASHBOARD: '/actor/dashboard',
     JOBS: '/actor/jobs',
     APPLICATIONS: '/actor/applications',
-    MESSAGES: '/actor/messages'
+    MESSAGES: '/actor/messages',
+    PROFILE: '/actor/profile'
   },
   TALENT: {
     LIST: '/talent',
@@ -34,7 +35,8 @@ export const ROUTES = {
       MANAGE: '/hirer/jobs/manage',
       EDIT: '/hirer/jobs/edit',
       VIEW: '/hirer/jobs/view'
-    }
+    },
+    PROFILE: '/hirer/profile/edit'
   },
   ADMIN: {
     USERS: '/admin/users',
