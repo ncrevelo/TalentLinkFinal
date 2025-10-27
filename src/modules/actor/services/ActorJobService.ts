@@ -24,7 +24,8 @@ import { db } from '@/shared/config/firebase';
 import {
   Job,
   JobStatus,
-  HiringStage
+  HiringStage,
+  HIRING_STAGES
 } from '@/modules/jobs/types';
 import { ActorProfile } from '@/modules/onboarding/types';
 import {
@@ -362,9 +363,20 @@ export class ActorJobService {
       }
 
       const job = mapJobDocument({ id: jobSnap.id, ...jobSnap.data() });
+      const now = new Date();
 
       if (!job.isActive || job.status !== JobStatus.ACTIVE) {
         throw new Error('Esta oferta no acepta más postulaciones.');
+      }
+
+      if (job.deadline && job.deadline.getTime() < now.getTime()) {
+        throw new Error('La fecha límite de esta oferta ya pasó.');
+      }
+
+      const currentStage = job.progress.currentStage ?? HiringStage.RECEIVING_APPLICATIONS;
+      const stageInfo = HIRING_STAGES[currentStage];
+      if (stageInfo && stageInfo.allowsApplications === false) {
+        throw new Error('Esta oferta ya no acepta postulaciones.');
       }
 
       const existingApplication = await getDocs(
@@ -380,7 +392,6 @@ export class ActorJobService {
         throw new Error('Ya te postulaste a esta oferta.');
       }
 
-      const now = new Date();
       const timeline = [
         {
           id: 'submitted',
@@ -434,6 +445,26 @@ export class ActorJobService {
         throw error;
       }
       throw new Error('No fue posible completar tu postulación.');
+    }
+  }
+
+  async getActorAppliedJobIds(actorId: string): Promise<string[]> {
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(db, APPLICATIONS_COLLECTION),
+          where('actorId', '==', actorId)
+        )
+      );
+
+      const jobIds = snapshot.docs
+        .map((docSnap) => docSnap.data()?.jobId)
+        .filter((jobId): jobId is string => typeof jobId === 'string' && jobId.length > 0);
+
+      return Array.from(new Set(jobIds));
+    } catch (error) {
+      console.error('Error fetching actor applied job ids:', error);
+      return [];
     }
   }
 

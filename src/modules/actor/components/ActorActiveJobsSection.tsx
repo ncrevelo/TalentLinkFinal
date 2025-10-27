@@ -8,7 +8,7 @@ import { ActorJobCard } from './ActorJobCard';
 import { JobApplicationModal } from './JobApplicationModal';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { Job } from '@/modules/jobs/types';
+import { Job, HIRING_STAGES, HiringStage } from '@/modules/jobs/types';
 
 const DEFAULT_FILTERS: ActorJobFilters = {
   sortBy: 'recent'
@@ -28,7 +28,8 @@ export const ActorActiveJobsSection: React.FC = () => {
     applicationError,
     applicationSuccess,
     applyToJob,
-    resetApplicationState
+    resetApplicationState,
+    appliedJobIds
   } = useActorJobs(DEFAULT_FILTERS);
 
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -82,6 +83,9 @@ export const ActorActiveJobsSection: React.FC = () => {
     return `${jobs.length} oportunidades listas para talento.`;
   }, [jobs.length, loading]);
 
+  const appliedJobsSet = useMemo(() => new Set(appliedJobIds), [appliedJobIds]);
+  const currentTime = Date.now();
+
   return (
     <section className="space-y-6">
       <ActorJobFiltersForm
@@ -100,15 +104,28 @@ export const ActorActiveJobsSection: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {jobs.map(job => (
-          <ActorJobCard
-            key={job.id}
-            job={job}
-            onApply={handleApplyClick}
-            disabled={applying && selectedJob?.id === job.id}
-            isApplying={applying && selectedJob?.id === job.id}
-          />
-        ))}
+        {jobs.map((job) => {
+          const isApplyingToJob = applying && selectedJob?.id === job.id;
+          const stage = job.progress.currentStage ?? HiringStage.RECEIVING_APPLICATIONS;
+          const stageInfo = HIRING_STAGES[stage];
+          const allowsApplications = stageInfo?.allowsApplications ?? true;
+          const deadlinePassed = job.deadline ? job.deadline.getTime() < currentTime : false;
+          const hasApplied = appliedJobsSet.has(job.id);
+          const disableApply = isApplyingToJob || hasApplied || deadlinePassed || !allowsApplications;
+
+          return (
+            <ActorJobCard
+              key={job.id}
+              job={job}
+              onApply={handleApplyClick}
+              disabled={disableApply}
+              isApplying={isApplyingToJob}
+              hasApplied={hasApplied}
+              isDeadlinePassed={deadlinePassed}
+              allowsApplications={allowsApplications}
+            />
+          );
+        })}
       </div>
 
       {hasMore && (

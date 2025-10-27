@@ -11,6 +11,9 @@ interface ActorJobCardProps {
   onApply: (job: Job) => void;
   disabled?: boolean;
   isApplying?: boolean;
+  hasApplied?: boolean;
+  isDeadlinePassed?: boolean;
+  allowsApplications?: boolean;
 }
 
 const formatCurrency = (amount: number, currency: string) =>
@@ -20,9 +23,51 @@ const formatCurrency = (amount: number, currency: string) =>
     maximumFractionDigits: 0
   }).format(amount);
 
-export const ActorJobCard: React.FC<ActorJobCardProps> = ({ job, onApply, disabled = false, isApplying = false }) => {
+const MONTH_LABELS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+const formatDeadline = (deadline?: Date | null) => {
+  if (!deadline) {
+    return 'Sin fecha límite';
+  }
+
+  const day = deadline.getDate();
+  const month = MONTH_LABELS[deadline.getMonth()] ?? '';
+  const year = deadline.getFullYear();
+
+  return `${day} de ${month} de ${year}`;
+};
+
+export const ActorJobCard: React.FC<ActorJobCardProps> = ({
+  job,
+  onApply,
+  disabled = false,
+  isApplying = false,
+  hasApplied = false,
+  isDeadlinePassed = false,
+  allowsApplications = true
+}) => {
   const salaryLabel = `${formatCurrency(job.salaryRange.min, job.salaryRange.currency)} - ${formatCurrency(job.salaryRange.max, job.salaryRange.currency)}${job.salaryRange.negotiable ? ' · Negociable' : ''}`;
-  const deadlineLabel = job.deadline ? new Date(job.deadline).toLocaleDateString() : 'Sin fecha límite';
+  const deadlineLabel = formatDeadline(job.deadline);
+
+  const buttonDisabled = disabled || hasApplied || isDeadlinePassed || !allowsApplications;
+  const buttonVariant = hasApplied || isDeadlinePassed || !allowsApplications ? 'outline' : 'primary';
+
+  let buttonLabel = 'Postularme';
+  if (hasApplied) {
+    buttonLabel = 'Ya te postulaste';
+  } else if (isDeadlinePassed) {
+    buttonLabel = 'Fecha límite vencida';
+  } else if (!allowsApplications) {
+    buttonLabel = 'Proceso cerrado';
+  }
+
+  const buttonTitle = hasApplied
+    ? 'Ya enviaste tu postulación para esta oferta.'
+    : isDeadlinePassed
+      ? 'La fecha límite de envío de material ya pasó.'
+      : !allowsApplications
+        ? 'El proceso está cerrado para nuevas postulaciones.'
+        : 'Enviar postulación';
 
   return (
     <Card className="border border-transparent hover:border-indigo-200 transition-colors shadow-sm">
@@ -40,10 +85,12 @@ export const ActorJobCard: React.FC<ActorJobCardProps> = ({ job, onApply, disabl
           </div>
           <Button
             onClick={() => onApply(job)}
-            disabled={disabled}
+            disabled={buttonDisabled}
             isLoading={isApplying}
+            variant={buttonVariant}
+            title={buttonTitle}
           >
-            Postularme
+            {buttonLabel}
           </Button>
         </div>
       </CardHeader>

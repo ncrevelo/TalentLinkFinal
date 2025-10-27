@@ -25,6 +25,8 @@ interface UseActorJobsReturn extends UseActorJobsState {
   applicationSuccess: boolean;
   applyToJob: (jobId: string, payload: JobApplicationPayload) => Promise<void>;
   resetApplicationState: () => void;
+  appliedJobIds: string[];
+  refreshAppliedJobs: () => Promise<void>;
 }
 
 const defaultState: UseActorJobsState = {
@@ -35,13 +37,24 @@ const defaultState: UseActorJobsState = {
 };
 
 export const useActorJobs = (initialFilters: ActorJobFilters = {}): UseActorJobsReturn => {
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
   const [state, setState] = useState<UseActorJobsState>(defaultState);
   const [filters, setFilters] = useState<ActorJobFilters>(initialFilters);
   const [applying, setApplying] = useState(false);
   const [applicationError, setApplicationError] = useState<string | null>(null);
   const [applicationSuccess, setApplicationSuccess] = useState(false);
+  const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]);
   const lastVisibleRef = useRef<QueryDocumentSnapshot<DocumentData> | undefined>(undefined);
+
+  const refreshAppliedJobs = useCallback(async () => {
+    if (!user?.uid || userProfile?.role !== UserRole.ACTOR) {
+      setAppliedJobIds([]);
+      return;
+    }
+
+    const jobIds = await actorJobService.getActorAppliedJobIds(user.uid);
+    setAppliedJobIds(jobIds);
+  }, [user?.uid, userProfile?.role]);
 
   const fetchJobs = useCallback(async (reset = false) => {
     try {
@@ -100,6 +113,7 @@ export const useActorJobs = (initialFilters: ActorJobFilters = {}): UseActorJobs
 
       await actorJobService.applyToJob(jobId, userProfile, payload);
 
+      setAppliedJobIds((prev) => (prev.includes(jobId) ? prev : [...prev, jobId]));
       setApplicationSuccess(true);
     } catch (error) {
       setApplicationError(error instanceof Error ? error.message : 'No fue posible completar la postulación.');
@@ -118,6 +132,10 @@ export const useActorJobs = (initialFilters: ActorJobFilters = {}): UseActorJobs
     fetchJobs(true);
   }, [filters, fetchJobs]);
 
+  useEffect(() => {
+    refreshAppliedJobs();
+  }, [refreshAppliedJobs]);
+
   const memoizedState = useMemo(() => ({
     ...state,
     filters,
@@ -128,7 +146,9 @@ export const useActorJobs = (initialFilters: ActorJobFilters = {}): UseActorJobs
     applicationError,
     applicationSuccess,
     applyToJob,
-    resetApplicationState
+    resetApplicationState,
+    appliedJobIds,
+    refreshAppliedJobs
   }), [
     state,
     filters,
@@ -139,7 +159,9 @@ export const useActorJobs = (initialFilters: ActorJobFilters = {}): UseActorJobs
     applicationError,
     applicationSuccess,
     applyToJob,
-    resetApplicationState
+    resetApplicationState,
+    appliedJobIds,
+    refreshAppliedJobs
   ]);
 
   return memoizedState;
