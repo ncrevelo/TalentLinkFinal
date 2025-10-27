@@ -2,15 +2,30 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { JobList, HiringStageManager } from '@/modules/jobs';
+import { JobList, HiringStageManager, JobApplicationsManager } from '@/modules/jobs';
 import { Job, HIRING_STAGES } from '@/modules/jobs/types';
 import { Button, Modal, ModalBody, ModalFooter } from '@/components/ui';
+import { jobService } from '@/modules/jobs';
 
 export default function ManageJobsPage() {
   const router = useRouter();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showStageManager, setShowStageManager] = useState(false);
+  const [jobListRefreshKey, setJobListRefreshKey] = useState(0);
+
+  const refreshSelectedJob = (jobId: string) => {
+    jobService
+      .getJobById(jobId)
+      .then((freshJob) => {
+        if (freshJob) {
+          setSelectedJob(freshJob);
+        }
+      })
+      .catch((err) => {
+        console.warn('No se pudo actualizar la información del trabajo seleccionado:', err);
+      });
+  };
 
   const handleEditJob = (job: Job) => {
     // Navigate to edit page (we could create this later)
@@ -25,6 +40,7 @@ export default function ManageJobsPage() {
   const handleManageStages = (job: Job) => {
     setSelectedJob(job);
     setShowStageManager(true);
+    refreshSelectedJob(job.id);
   };
 
   const handleCreateNew = () => {
@@ -77,6 +93,7 @@ export default function ManageJobsPage() {
         onEditJob={handleEditJob}
         onViewJob={handleViewJob}
         onManageStages={handleManageStages}
+        refreshKey={jobListRefreshKey}
       />
 
       {/* Job Details Modal */}
@@ -199,17 +216,29 @@ export default function ManageJobsPage() {
         isOpen={showStageManager}
         onClose={() => setShowStageManager(false)}
         title={`Gestionar Proceso: ${selectedJob?.title || ''}`}
-        size="lg"
+        size="full"
       >
-        <ModalBody>
+        <ModalBody className="space-y-6 max-h-[80vh] overflow-y-auto">
           {selectedJob && (
-            <HiringStageManager
-              job={selectedJob}
-              onStageChanged={() => {
-                setShowStageManager(false);
-                // You might want to refresh the job list here
-              }}
-            />
+            <>
+              <HiringStageManager
+                job={selectedJob}
+                onStageChanged={(updatedJob) => {
+                  setSelectedJob(updatedJob);
+                  setJobListRefreshKey((prev) => prev + 1);
+                }}
+              />
+
+              <JobApplicationsManager
+                job={selectedJob}
+                onDataChanged={() => {
+                  setJobListRefreshKey((prev) => prev + 1);
+                  if (selectedJob) {
+                    refreshSelectedJob(selectedJob.id);
+                  }
+                }}
+              />
+            </>
           )}
         </ModalBody>
         

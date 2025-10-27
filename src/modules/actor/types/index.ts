@@ -1,4 +1,5 @@
 import { Job, HiringStage, Department, JobType, WorkModality, ExperienceLevel } from '@/modules/jobs/types';
+import type { ActorProfile } from '@/modules/onboarding/types';
 
 export enum ApplicationStatus {
   APPLIED = 'applied',
@@ -16,6 +17,22 @@ export interface ApplicationTimelineEvent {
   description?: string;
   createdAt: Date;
   stage: HiringStage;
+}
+
+export interface ApplicationActorSnapshot {
+  uid: string;
+  name?: string;
+  location?: ActorProfile['actorData']['location'];
+  experience?: ActorProfile['actorData']['experience'];
+  availability?: ActorProfile['actorData']['availability'];
+}
+
+export interface ApplicationJobSnapshot {
+  id: Job['id'];
+  title: Job['title'];
+  department: Job['department'];
+  workModality: Job['workModality'];
+  deadline?: Date | null;
 }
 
 export interface ActorJobFilters {
@@ -50,6 +67,10 @@ export interface JobApplication {
   notes?: string;
   job?: Job;
   timeline: ApplicationTimelineEvent[];
+  actorSnapshot?: ApplicationActorSnapshot | null;
+  jobSnapshot?: ApplicationJobSnapshot | null;
+  rejectionReason?: string | null;
+  rejectionDate?: Date | null;
   lastMessageAt?: Date | null;
   unreadMessages?: number;
 }

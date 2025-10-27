@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Job, HiringStage, HIRING_STAGES } from '../types';
 import { useHiringStage } from '../hooks/useJobs';
 import { Button, Card, CardContent, Alert, Modal, ModalBody, ModalFooter } from '../../../components/ui';
+import { jobService } from '../services';
 
 interface HiringStageManagerProps {
   job: Job;
@@ -18,9 +19,14 @@ export const HiringStageManager: React.FC<HiringStageManagerProps> = ({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedStage, setSelectedStage] = useState<HiringStage | null>(null);
   const [notes, setNotes] = useState('');
+  const [currentJob, setCurrentJob] = useState<Job>(job);
+
+  useEffect(() => {
+    setCurrentJob(job);
+  }, [job]);
 
   // Ensure currentStage exists with fallback
-  const currentStage = job.progress?.currentStage || HiringStage.RECEIVING_APPLICATIONS;
+  const currentStage = currentJob.progress?.currentStage || HiringStage.RECEIVING_APPLICATIONS;
   const currentStageInfo = HIRING_STAGES[currentStage] || HIRING_STAGES[HiringStage.RECEIVING_APPLICATIONS];
   
   // Get available next stages with safety check
@@ -37,12 +43,36 @@ export const HiringStageManager: React.FC<HiringStageManagerProps> = ({
   const confirmStageAdvance = async () => {
     if (!selectedStage) return;
 
-    const success = await advanceStage(job.id, selectedStage, notes);
-    if (success) {
+    const wasSuccessful = await advanceStage(job.id, selectedStage, notes);
+    if (wasSuccessful) {
+      const refreshedJob = await jobService.getJobById(job.id);
+      if (refreshedJob) {
+        setCurrentJob(refreshedJob);
+        onStageChanged?.(refreshedJob);
+      } else {
+        const fallbackJob: Job = {
+          ...currentJob,
+          progress: {
+            ...currentJob.progress,
+            currentStage: selectedStage,
+            stageHistory: [
+              ...(currentJob.progress?.stageHistory || []),
+              {
+                fromStage: currentStage,
+                toStage: selectedStage,
+                transitionDate: new Date(),
+                performedBy: job.createdBy,
+                notes
+              }
+            ]
+          }
+        };
+        setCurrentJob(fallbackJob);
+        onStageChanged?.(fallbackJob);
+      }
       setShowConfirmModal(false);
       setSelectedStage(null);
       setNotes('');
-      onStageChanged?.(job);
     }
   };
 
@@ -117,8 +147,8 @@ export const HiringStageManager: React.FC<HiringStageManagerProps> = ({
               Historial de Etapas
             </h4>
             <div className="space-y-2">
-              {job.progress?.stageHistory?.length ? (
-                job.progress.stageHistory.map((transition, index) => (
+              {currentJob.progress?.stageHistory?.length ? (
+                currentJob.progress.stageHistory.map((transition, index) => (
                   <div key={index} className="flex items-center space-x-3 text-sm">
                     <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                     <span className="font-medium">
@@ -141,7 +171,7 @@ export const HiringStageManager: React.FC<HiringStageManagerProps> = ({
                     {currentStageInfo.label}
                   </span>
                   <span className="text-gray-500">
-                    {formatDate(job.createdAt)}
+                    {formatDate(currentJob.createdAt)}
                   </span>
                   <span className="text-gray-600 italic">
                     - Trabajo creado

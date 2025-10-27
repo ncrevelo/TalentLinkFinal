@@ -134,6 +134,26 @@ const mapApplicationDocument = (docSnap: QueryDocumentSnapshot<DocumentData>): J
     portfolioLinks: Array.isArray(data.portfolioLinks) ? data.portfolioLinks : [],
     notes: data.notes || undefined,
     timeline,
+    actorSnapshot: data.actorSnapshot
+      ? {
+          uid: data.actorSnapshot.uid,
+          name: data.actorSnapshot.name || undefined,
+          location: data.actorSnapshot.location || undefined,
+          experience: data.actorSnapshot.experience || undefined,
+          availability: data.actorSnapshot.availability || undefined
+        }
+      : null,
+    jobSnapshot: data.jobSnapshot
+      ? {
+          id: data.jobSnapshot.id,
+          title: data.jobSnapshot.title,
+          department: data.jobSnapshot.department,
+          workModality: data.jobSnapshot.workModality,
+          deadline: data.jobSnapshot.deadline ? toDate(data.jobSnapshot.deadline) : null
+        }
+      : null,
+    rejectionReason: data.rejectionReason || null,
+    rejectionDate: data.rejectionDate ? toDate(data.rejectionDate) : null,
     lastMessageAt: data.lastMessageAt ? toDate(data.lastMessageAt) : null,
     unreadMessages: typeof data.unreadMessagesForActor === 'number' ? Math.max(data.unreadMessagesForActor, 0) : 0
   };
