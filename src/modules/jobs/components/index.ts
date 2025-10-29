@@ -4,3 +4,4 @@ export { JobEditForm } from './JobEditForm';
 export { JobList } from './JobList';
 export { HirerDashboardStats } from './HirerDashboardStats';
 export { HiringStageManager } from './HiringStageManager';
+export { JobApplicationsManager } from './JobApplicationsManager';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useJobs, useJobUpdate } from '../hooks/useJobs';
 import { Job, JobFilters, JobStatus, JobType, Department, ExperienceLevel, WorkModality, HIRING_STAGES } from '../types';
 import { 
@@ -24,16 +24,24 @@ interface JobListProps {
   onEditJob?: (job: Job) => void;
   onViewJob?: (job: Job) => void;
   onManageStages?: (job: Job) => void;
+  refreshKey?: number;
 }
 
-export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob, onManageStages }) => {
+export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob, onManageStages, refreshKey }) => {
   const [filters, setFilters] = useState<JobFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState<Job | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
   
-  const { jobs, loading, error, hasMore, loadMore, updateFilters } = useJobs(filters);
+  const { jobs, loading, error, hasMore, loadMore, updateFilters, refetch } = useJobs(filters);
   const { deleteJob, toggleStatus, updating } = useJobUpdate();
+
+  useEffect(() => {
+    if (typeof refreshKey !== 'number' || refreshKey === 0) {
+      return;
+    }
+    refetch();
+  }, [refreshKey, refetch]);
 
   // Filter options
   const statusOptions = [
@@ -85,7 +93,10 @@ export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob, onManage
   };
 
   const handleToggleStatus = async (jobId: string) => {
-    await toggleStatus(jobId);
+    const success = await toggleStatus(jobId);
+    if (success) {
+      refetch();
+    }
   };
 
   const handleDeleteJob = async () => {
@@ -95,6 +106,7 @@ export const JobList: React.FC<JobListProps> = ({ onEditJob, onViewJob, onManage
     if (success) {
       setShowDeleteModal(null);
       setDeleteReason('');
+      refetch();
     }
   };
 

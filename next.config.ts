@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
     // Optimizar la hidratación
     optimizePackageImports: ['@/components', '@/modules'],
   },
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com'
+      }
+    ]
+  },
   
   // Configuración del compilador
   compiler: {
