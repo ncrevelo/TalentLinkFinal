@@ -10,6 +10,7 @@ import {
   Language
 } from '@/modules/onboarding/types';
 import { useProfileUpdate } from '../hooks/useProfile';
+import { ActorPortfolioMediaSection, PortfolioPhoto } from './ActorPortfolioMediaSection';
 
 const DEPARTMENTS = Object.values(ColombiaDepartment).map(value => ({
   value,
@@ -55,7 +56,7 @@ type ActorProfileFormState = {
   languages: string;
   reel: string;
   resume: string;
-  photos: string;
+  photos: PortfolioPhoto[];
   isAvailable: boolean;
   preferredProjects: ProjectType[];
   workingRadius: string;
@@ -108,14 +109,6 @@ const stringifySpecialSkills = (skills: string[] = []): string => {
   return skills.join('\n');
 };
 
-const stringifyPhotos = (photos: string[] = []): string => {
-  if (!photos.length) {
-    return '';
-  }
-
-  return photos.join('\n');
-};
-
 const createInitialState = (profile: ActorProfile): ActorProfileFormState => {
   const { actorData } = profile;
 
@@ -140,7 +133,7 @@ const createInitialState = (profile: ActorProfile): ActorProfileFormState => {
     languages: stringifyLanguages(actorData.experience?.languages),
     reel: actorData.portfolio?.reel || '',
     resume: actorData.portfolio?.resume || '',
-    photos: stringifyPhotos(actorData.portfolio?.photos),
+    photos: mapExistingPhotos(actorData.portfolio?.photos),
     isAvailable: actorData.availability?.isAvailable ?? true,
     preferredProjects: actorData.availability?.preferredProjects || [],
     workingRadius: actorData.availability?.workingRadius ? String(actorData.availability.workingRadius) : '',
@@ -189,6 +182,42 @@ const parseList = (input: string): string[] => {
     .filter(Boolean);
 };
 
+const mapExistingPhotos = (photos: string[] = []): PortfolioPhoto[] => {
+  return photos
+    .map(url => url.trim())
+    .filter(Boolean)
+    .map(url => ({ url }));
+};
+
+const isValidYouTubeUrl = (url: string): boolean => {
+  if (!url.trim()) {
+    return true;
+  }
+
+  const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|shorts\/)|youtu\.be\/)[^\s]+$/i;
+  return pattern.test(url.trim());
+};
+
+function removeUndefinedValues<T>(input: T): T {
+  if (Array.isArray(input)) {
+    return input.map(item => removeUndefinedValues(item)) as unknown as T;
+  }
+
+  if (input && typeof input === 'object') {
+    if (input instanceof Date) {
+      return input;
+    }
+
+    const entries = Object.entries(input as Record<string, unknown>)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, removeUndefinedValues(value)] as const);
+
+    return Object.fromEntries(entries) as T;
+  }
+
+  return input;
+}
+
 const parseNumberField = (value: string, fallback: number): number => {
   if (!value.trim()) {
     return fallback;
@@ -229,17 +258,15 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
   }, [initialState, resetState]);
 
   useEffect(() => {
-    const originalString = JSON.stringify({
-      ...originalData,
-      categories: [...originalData.categories].sort(),
-      preferredProjects: [...originalData.preferredProjects].sort()
+    const normalize = (data: ActorProfileFormState) => ({
+      ...data,
+      categories: [...data.categories].sort(),
+      preferredProjects: [...data.preferredProjects].sort(),
+      photos: [...data.photos.map(photo => photo.url)].sort()
     });
 
-    const currentString = JSON.stringify({
-      ...formData,
-      categories: [...formData.categories].sort(),
-      preferredProjects: [...formData.preferredProjects].sort()
-    });
+    const originalString = JSON.stringify(normalize(originalData));
+    const currentString = JSON.stringify(normalize(formData));
 
     setHasChanges(originalString !== currentString);
   }, [formData, originalData]);
@@ -250,7 +277,7 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
     }
   }, [success, onSuccess, profile]);
 
-  const handleInputChange = (field: keyof ActorProfileFormState, value: string | boolean | ActorCategory[] | ProjectType[]) => {
+  const handleInputChange = <K extends keyof ActorProfileFormState>(field: K, value: ActorProfileFormState[K]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -263,6 +290,17 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
       }));
     }
   };
+
+  const portfolioErrors = useMemo(() => {
+    const result: { photos?: string; reel?: string } = {};
+    if (errors.photos) {
+      result.photos = errors.photos;
+    }
+    if (errors.reel) {
+      result.reel = errors.reel;
+    }
+    return Object.keys(result).length ? result : undefined;
+  }, [errors.photos, errors.reel]);
 
   const toggleSelection = <T extends string>(current: T[], value: T): T[] => {
     return current.includes(value) ? current.filter(item => item !== value) : [...current, value];
@@ -310,6 +348,19 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
 
     if (formData.yearsOfExperience && Number(formData.yearsOfExperience) < 0) {
       validationErrors.yearsOfExperience = 'Los años de experiencia deben ser un número positivo';
+    }
+
+    if (formData.reel && !isValidYouTubeUrl(formData.reel)) {
+      validationErrors.reel = 'Ingresa un enlace válido de YouTube.';
+    }
+
+    if (formData.photos.length > 5) {
+      validationErrors.photos = 'Puedes guardar máximo cinco fotos.';
+    }
+
+    const hasEmptyPhoto = formData.photos.some(photo => !photo.url.trim());
+    if (hasEmptyPhoto) {
+      validationErrors.photos = 'Cada foto debe tener una URL válida.';
     }
 
     setErrors(validationErrors);
@@ -365,7 +416,7 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
         ...actorData.portfolio,
         reel: formData.reel.trim() || undefined,
         resume: formData.resume.trim() || undefined,
-        photos: parseList(formData.photos)
+        photos: formData.photos.map(photo => photo.url)
       },
       availability: {
         ...actorData.availability,
@@ -384,11 +435,14 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
       agentContact: formData.hasAgent ? (formData.agentContact.trim() || undefined) : undefined
     };
 
+    const sanitizedActorData = removeUndefinedValues(updatedActorData);
+    const payload = removeUndefinedValues({
+      displayName: formData.displayName.trim(),
+      actorData: sanitizedActorData
+    });
+
     try {
-      await updateProfile(profile.uid, {
-        displayName: formData.displayName.trim(),
-        actorData: updatedActorData
-      });
+      await updateProfile(profile.uid, payload);
     } catch (submitError) {
       console.error('Error updating actor profile:', submitError);
     }
@@ -469,7 +523,7 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">Género</label>
                 <select
                   value={formData.gender}
-                  onChange={event => handleInputChange('gender', event.target.value)}
+                  onChange={event => handleInputChange('gender', event.target.value as ActorProfileFormState['gender'])}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="masculino">Masculino</option>
@@ -616,30 +670,19 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
             <h3 className="text-lg font-semibold text-gray-900">Portafolio</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Input
-                label="URL del reel"
-                value={formData.reel}
-                onChange={event => handleInputChange('reel', event.target.value)}
-                placeholder="https://"
-              />
-              <Input
                 label="URL del CV"
                 value={formData.resume}
                 onChange={event => handleInputChange('resume', event.target.value)}
                 placeholder="https://"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fotos (una URL por línea)
-              </label>
-              <textarea
-                value={formData.photos}
-                onChange={event => handleInputChange('photos', event.target.value)}
-                rows={3}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="https://mis-fotos.com/foto1.jpg"
-              />
-            </div>
+            <ActorPortfolioMediaSection
+              photos={formData.photos}
+              onPhotosChange={photos => handleInputChange('photos', photos)}
+              youtubeUrl={formData.reel}
+              onYoutubeUrlChange={value => handleInputChange('reel', value)}
+              errors={portfolioErrors}
+            />
           </section>
 
           {/* Disponibilidad */}
