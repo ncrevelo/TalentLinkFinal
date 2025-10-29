@@ -247,6 +247,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
           yearsInBusiness: formData.yearsInBusiness ? parseInt(formData.yearsInBusiness) : undefined,
           projectTypes: formData.projectTypes,
           averageBudget: formData.averageBudget,
+          isVerified: profile.hirerData?.isVerified || false,
           taxId: formData.taxId.trim() || undefined,
           description: formData.description.trim(),
           socialMedia: {
