@@ -14,6 +14,7 @@ import {
   Language,
   UserRole
 } from '@/modules/onboarding/types';
+import { ActorPortfolioViewer, PortfolioPhoto } from '@/modules/profile/components/ActorPortfolioViewer';
 
 interface JobApplicationsManagerProps {
   job: Job;
@@ -833,44 +834,12 @@ export const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({ 
 
               <div className="space-y-2">
                 <h4 className="text-md font-semibold text-gray-900">Portafolio</h4>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div>
-                    <span className="font-medium text-gray-800">Reel:</span>{' '}
-                    {actorProfileData.portfolio.reel ? (
-                      <a href={actorProfileData.portfolio.reel} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        Ver reel
-                      </a>
-                    ) : (
-                      'No especificado'
-                    )}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-800">Currículum:</span>{' '}
-                    {actorProfileData.portfolio.resume ? (
-                      <a href={actorProfileData.portfolio.resume} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        Ver CV
-                      </a>
-                    ) : (
-                      'No especificado'
-                    )}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-800">Galería de fotos:</span>
-                    {actorProfileData.portfolio.photos?.length ? (
-                      <ul className="list-disc list-inside space-y-1 text-blue-600">
-                        {actorProfileData.portfolio.photos.map((photoUrl, index) => (
-                          <li key={index}>
-                            <a href={photoUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              {`Foto ${index + 1}`}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="block text-gray-700">No se adjuntaron fotos</span>
-                    )}
-                  </div>
-                </div>
+                <ActorPortfolioViewer
+                  photos={actorProfileData.portfolio.photos?.map(url => ({ url })) ?? []}
+                  reelUrl={actorProfileData.portfolio.reel}
+                  cvUrl={actorProfileData.portfolio.resume}
+                  actorName={profileModal.actorName}
+                />
               </div>
 
               <div className="space-y-2">

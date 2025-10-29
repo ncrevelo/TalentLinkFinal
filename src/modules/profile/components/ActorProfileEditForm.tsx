@@ -11,6 +11,7 @@ import {
 } from '@/modules/onboarding/types';
 import { useProfileUpdate } from '../hooks/useProfile';
 import { ActorPortfolioMediaSection, PortfolioPhoto } from './ActorPortfolioMediaSection';
+import { ActorCvUploadSection } from './ActorCvUploadSection';
 
 const DEPARTMENTS = Object.values(ColombiaDepartment).map(value => ({
   value,
@@ -292,15 +293,18 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
   };
 
   const portfolioErrors = useMemo(() => {
-    const result: { photos?: string; reel?: string } = {};
+    const result: { photos?: string; reel?: string; resume?: string } = {};
     if (errors.photos) {
       result.photos = errors.photos;
     }
     if (errors.reel) {
       result.reel = errors.reel;
     }
+    if (errors.resume) {
+      result.resume = errors.resume;
+    }
     return Object.keys(result).length ? result : undefined;
-  }, [errors.photos, errors.reel]);
+  }, [errors.photos, errors.reel, errors.resume]);
 
   const toggleSelection = <T extends string>(current: T[], value: T): T[] => {
     return current.includes(value) ? current.filter(item => item !== value) : [...current, value];
@@ -668,14 +672,11 @@ export const ActorProfileEditForm: React.FC<ActorProfileEditFormProps> = ({
           {/* Portafolio */}
           <section className="space-y-4 border-b pb-6">
             <h3 className="text-lg font-semibold text-gray-900">Portafolio</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Input
-                label="URL del CV"
-                value={formData.resume}
-                onChange={event => handleInputChange('resume', event.target.value)}
-                placeholder="https://"
-              />
-            </div>
+            <ActorCvUploadSection
+              cvUrl={formData.resume}
+              onCvChange={url => handleInputChange('resume', url)}
+              errors={portfolioErrors}
+            />
             <ActorPortfolioMediaSection
               photos={formData.photos}
               onPhotosChange={photos => handleInputChange('photos', photos)}
