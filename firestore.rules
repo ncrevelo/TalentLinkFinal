@@ -25,6 +25,39 @@ service cloud.firestore {
     match /admin/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Reglas para la colección 'jobs' - ofertas de trabajo
+    match /jobs/{jobId} {
+      // Solo contratantes autenticados pueden crear trabajos
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/hirer/$(request.auth.uid)) &&
+        request.auth.uid == request.resource.data.createdBy;
+      
+      // El creador puede leer, actualizar y eliminar sus trabajos
+      allow read, update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.createdBy;
+      
+      // Usuarios autenticados pueden leer trabajos activos y no eliminados
+      allow read: if request.auth != null && 
+        resource.data.isActive == true && 
+        resource.data.isDeleted == false;
+    }
+
+    // Reglas para la colección 'deletedJobs' - trabajos eliminados (archivo)
+    match /deletedJobs/{deletedJobId} {
+      // Solo el usuario que eliminó el trabajo puede leer y escribir
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.deletedBy;
+      
+      // Permitir creación solo si el usuario es el que está eliminando
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.deletedBy;
+    }
+
+    // Reglas para estadísticas de trabajos
+    match /jobStats/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
     
     // Reglas para otras colecciones futuras
     match /projects/{projectId} {

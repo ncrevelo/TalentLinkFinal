@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Panorama general
 
-## Getting Started
+Se implementó un módulo completo para actores que replica la experiencia de plataformas como Magneto Empleos pero enfocada en artistas, actores y perfiles creativos. El objetivo es que el talento pueda explorar ofertas activas, postularse, dar seguimiento a sus procesos y gestionar los mensajes enviados por los contratantes (canal unidireccional).
 
-First, run the development server:
+## Nuevas rutas y navegación
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- `src/shared/constants/index.ts` incluye ahora la familia `ROUTES.ACTOR` con:
+	- `/actor/dashboard`: panel principal del talento.
+	- `/actor/jobs`: catálogo filtrable de ofertas activas.
+	- `/actor/applications`: listado de postulaciones y su progreso.
+	- `/actor/messages`: centro de mensajes recibidos del contratante.
+- `src/app/actor/layout.tsx` protege el módulo para usuarios con rol `actor`, reutilizando `Navbar` y `Layout`.
+- Se añadió navegación condicional en `Navbar` para mostrar enlaces exclusivos según rol.
+- El dashboard genérico (`src/app/dashboard/page.tsx`) redirige acciones rápidas del actor a las nuevas vistas.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Arquitectura del módulo de actores
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+La carpeta `src/modules/actor` incorpora una estructura modular siguiendo buenas prácticas:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **types** (`types/index.ts`): contratos de datos para postulaciones, métricas, mensajes y filtros.
+- **services** (`services/ActorJobService.ts`): integración con Firestore para ofertas activas, postulaciones, métricas e inbox del actor. Incluye:
+	- Normalización de documentos.
+	- Postulación con validaciones (no duplicar aplicaciones, ofertas cerradas, timeline inicial).
+	- Suscripción en tiempo real a mensajes solo emitidos por contratantes.
+	- Métricas agregadas (ofertas activas, entrevistas, ofertas, mensajes sin leer).
+- **hooks** (`hooks/*.ts`): lógica reutilizable de estado (ofertas, postulaciones, métricas y mensajes) con manejo de paginación, cache y errores controlados.
+- **components**: UI desacoplada y reutilizable.
+	- `ActorDashboardHeader`: métricas, progreso y fechas límite.
+	- `ActorActiveJobsSection`: experiencia de búsqueda con filtros avanzados, tarjetas y modal de postulación.
+	- `ActorApplicationsList`: agrupa postulaciones por estado y muestra etapas del pipeline.
+	- `ActorMessageCenter`: bandeja de mensajes con marca de lectura.
+	- Formularios auxiliares (`ActorJobFilters`, `JobApplicationModal`, etc.).
 
-## Learn More
+## Pantallas nuevas
 
-To learn more about Next.js, take a look at the following resources:
+- `/actor/dashboard` (`src/app/actor/dashboard/page.tsx`): combina métricas, próximos hitos, ofertas sugeridas, progreso de postulaciones y mensajes.
+- `/actor/jobs` (`src/app/actor/jobs/page.tsx`): catálogo dedicadado a la búsqueda de proyectos con filtros por departamento, modalidad, experiencia y salario.
+- `/actor/applications` (`src/app/actor/applications/page.tsx`): secciones “Procesos activos” y “Historial” alimentadas con `useActorApplications`.
+- `/actor/messages` (`src/app/actor/messages/page.tsx`): muestra el inbox unidireccional proveniente del contratante.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Reglas clave implementadas
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- El actor solo visualiza sus postulaciones (`ActorJobService.getApplications`) y métricas asociadas a su `uid`.
+- Se evita la doble postulación verificando existencia previa antes de escribir un registro.
+- Mensajes únicamente originados por el contratante (`senderRole` hirer/system). El actor puede marcar como leídos pero no enviar respuestas.
+- Actualización de contadores en Firestore (Aplicaciones recibidas e indicadores de mensajes no leídos) usando `increment` para consistencia.
 
-## Deploy on Vercel
+## Experiencia de UI
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Tarjetas y badges reutilizados del sistema de diseño existente para mantener consistencia visual.
+- Filtros con `Select` soportan búsqueda y reseteo rápido.
+- Modal de postulación admite carta de presentación y enlaces de portafolio.
+- Alertas y estados vacíos explican acciones siguientes al usuario.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Integración con páginas existentes
+
+- `Navbar` ahora es un componente client con enlaces condicionales basados en `userProfile.role`.
+- `useAuth` aprovecha `ROUTES` para redirecciones centralizadas de actor vs contratante.
+- Acciones rápidas del dashboard original llevan al módulo de actor para evitar duplicación de flujos.
+
+## Cómo probar
+
+1. Inicia sesión con un usuario cuyo perfil tenga rol `actor` y onboarding completo.
+2. Navega a `/actor/dashboard` para ver métricas y próximos hitos.
+3. Desde “Ver ofertas activas”, aplica filtros y lanza una postulación. Verifica el banner de éxito y que la oferta aparezca en “Mis progresos”.
+4. Envía mensajes desde el panel de contratante (colección `jobMessages`). Observa que el actor los recibe en `/actor/messages` y puede marcarlos como leídos.
+5. Comprueba que otros roles no pueden acceder al módulo (son redirigidos a su dashboard correspondiente).
+
+## Dependencias y acceso a datos
+
+- Colecciones involucradas en Firestore:
+	- `jobs`: se consultan documentos `active`, `isActive` y `status`.
+	- `jobApplications`: nuevas postulaciones con snapshots de actor y job.
+	- `jobMessages`: mensajes del contratante al actor, con jobSnapshot para mostrar contexto.
+- Se utilizan APIs de Firestore (`getDocs`, `query`, `onSnapshot`, `increment`, `getCountFromServer`) manteniendo índices existentes.
+
+## Próximos pasos sugeridos
+
+- Ajustar reglas de seguridad de Firestore para reforzar que solo el contratante pueda escribir en `jobMessages` y solo el actor marcar lectura.
+- Exponer notificaciones en tiempo real mediante listeners en UI (por ahora la lista se actualiza al abrir la vista).
+- Incorporar filtros adicionales (rango de fechas, tags) y paginación basada en infinito scroll para las ofertas.

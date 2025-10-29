@@ -15,11 +15,28 @@ export const ROUTES = {
   },
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
+  ACTOR: {
+    DASHBOARD: '/actor/dashboard',
+    JOBS: '/actor/jobs',
+    APPLICATIONS: '/actor/applications',
+    MESSAGES: '/actor/messages',
+    PROFILE: '/actor/profile'
+  },
   TALENT: {
     LIST: '/talent',
     CREATE: '/talent/create',
     EDIT: '/talent/edit',
     VIEW: '/talent/view'
+  },
+  HIRER: {
+    DASHBOARD: '/hirer/dashboard',
+    JOBS: {
+      CREATE: '/hirer/jobs/create',
+      MANAGE: '/hirer/jobs/manage',
+      EDIT: '/hirer/jobs/edit',
+      VIEW: '/hirer/jobs/view'
+    },
+    PROFILE: '/hirer/profile/edit'
   },
   ADMIN: {
     USERS: '/admin/users',
